@@ -1,0 +1,36 @@
+.red-text {
+    color: red;
+}
+
+.clear {
+    clear: both;
+}
+
+.div-spacing {
+    height: 10px;
+}
+
+.form {
+    margin-bottom: 100px;
+}
+
+/* Small devices (tablets, 768px and up) */
+@media (min-width: 768px) {
+    .form {
+        padding: 0 8%;
+    }
+}
+
+/* Medium devices (desktops, 992px and up) */
+@media (min-width: 992px) {
+    .form {
+        padding: 0 15%;
+    }
+}
+
+/* Large devices (large desktops, 1200px and up) */
+@media (min-width: 1200px) {
+    .form {
+        padding: 0 20%;
+    }
+}
