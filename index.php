@@ -8,32 +8,27 @@
  *** INCLUDES
  **************************************************/
 include_once('includes/connection.php');
+ob_start();
 
-// get the action value
-if (isset($_GET['action'])) {
-	$action = $_GET['action'];
-} else {
-	$action = null;
-}
+// get the action and sub_action value
+$action = $_GET['action'];
+$sub_action = $_GET['sub_action'];
 
 /**************************************************
- *** AJAX FUNCTION
+ *** AJAX FUNCTIONS
  **************************************************/
 if ($action == 'get_client_priority') {
 	// populate the client priority drop-down box
 	$client_id = $_GET['client_id'];
-	$sql       = "SELECT priority
-				  FROM feature_request_app.requested_feature
-				  WHERE client_id = '".mysqli_real_escape_string($conn, $client_id)."'";
-	$result    = mysqli_query($conn, $sql);
+	$num_rows  = get_num_requested_features($conn, $client_id);
 
-	// if this client hasn't requested any feature,
-	// there is only one option for this feature's priority
-	if (mysqli_num_rows($result) == 0) {
+	// if this client hasn't requested any feature yet,
+	// there is only one option for this feature's priority (1)
+	if ($num_rows == 0) {
 		echo "<option value='1'>1</option>";
 	} else {
-		while ($row = mysqli_fetch_assoc($result)) {
-			echo "<option value='".$row['priority']."'>".$row['priority']."</option>";
+		for ($i = $num_rows + 1; $i >= 1; $i--) {
+			echo "<option value='".$i."'>".$i."</option>";
 		}
 	}
 
@@ -97,18 +92,18 @@ if ($action == 'request_form') {
 		<div class="div-spacing"></div>
 
 		<!-- SUBMIT NEW FEATURE FORM -->
-		<form>
+		<form method="post" action="?action=submit_new_request">
 			<!-- FEATURE TITLE -->
 			<div class="form-group">
 				<label for="feature_title">Title <span class="red-text">*</span></label>
-				<input type="text" class="form-control" id="feature_title" placeholder="Title">
+				<input type="text" class="form-control" name="feature_title" placeholder="Title" required>
 			</div>
 
 			<div class="row">
 				<!-- CLIENT -->
 				<div class="form-group col-xs-5 col-sm-3 col-md-6">
 					<label for="feature_client">Client <span class="red-text">*</span></label>
-					<select id="feature_client" class="form-control" onchange="set_client_priority();">
+					<select id="feature_client" class="form-control" name="feature_client" required onchange="set_client_priority();">
 						<option></option>
 						<?php
 						$sql = "SELECT id, CONCAT(first_name, ' ',last_name) AS name
@@ -139,17 +134,17 @@ if ($action == 'request_form') {
 				<!-- CLIENT PRIORITY -->
 				<div class="form-group col-xs-5 col-sm-3 col-md-3">
 					<label for="feature_priority">Client Priority <span class="red-text">*</span></label>
-					<select id="feature_priority" class="form-control">
+					<select id="feature_priority" class="form-control" name="feature_priority" required>
 						<?php
 						/* priority options are populated by AJAX, determined by client */
 						?>
 					</select>
-				</div>
+				</div><!-- .form-group -->
 
 				<!-- PRODUCT AREA -->
 				<div class="form-group col-xs-5 col-sm-3 col-md-3">
 					<label for="feature_area">Product Area <span class="red-text">*</span></label>
-					<select id="feature_area" class="form-control">
+					<select name="feature_area" class="form-control" required>
 						<option></option>
 						<?php
 						$sql = "SELECT *
@@ -164,31 +159,31 @@ if ($action == 'request_form') {
 						}
 						?>
 					</select>
-				</div>
-			</div>
+				</div><!-- .form-group -->
+			</div><!-- .row -->
 
 			<!-- TARGET DATE -->
 			<div class="form-group">
 				<label for="feature_client">Target Date <span class="red-text">*</span></label>
-				<input type="date" class="form-control" id="feature_target_date" placeholder="mm/dd/yyyy">
-			</div>
+				<input type="date" class="form-control" name="feature_target_date" placeholder="mm/dd/yyyy" required>
+			</div><!-- .form-group -->
 
 			<!-- TICKET URL -->
 			<div class="form-group">
 				<label for="feature_url">Ticket URL</label>
-				<input type="text" class="form-control" id="feature_url" placeholder="Ticket URL">
-			</div>
+				<input type="text" class="form-control" name="feature_url" placeholder="Ticket URL">
+			</div><!-- .form-group -->
 
 			<!-- FEATURE DESCRIPTION -->
 			<div class="form-group">
 				<label for="feature_description">Description <span class="red-text">*</span></label>
-				<textarea class="form-control" id="feature_description" rows="3"></textarea>
-			</div>
+				<textarea class="form-control" name="feature_description" rows="3" required></textarea>
+			</div><!-- .form-group -->
 
 			<!-- SUBMIT -->
 			<button type="submit" class="btn-lg btn-primary">Submit</button>
 		</form>
-	</div>
+	</div><!-- .container .form -->
 	<?php
 }
 ?>
@@ -198,7 +193,41 @@ if ($action == 'request_form') {
  *** SUBMIT NEW REQUEST
  **************************************************/
 if ($action == 'submit_new_request') {
+	// insert new feature record into the database
+	if (isset($_POST)) {
+		$title     = mysqli_real_escape_string($conn, $_POST['feature_title']);
+		$client_id = mysqli_real_escape_string($conn, $_POST['feature_client']);
+		$priority  = mysqli_real_escape_string($conn, $_POST['feature_priority']);
+		$area      = mysqli_real_escape_string($conn, $_POST['feature_area']);
+		$date      = mysqli_real_escape_string($conn, $_POST['feature_target_date']);
+		$url       = mysqli_real_escape_string($conn, $_POST['feature_url']);
+		$desc      = mysqli_real_escape_string($conn, $_POST['feature_description']);
 
+		$num_requested_features = get_num_requested_features($conn, $client_id);
+
+		// but first, we need to check if the priority the client set for this feature
+		// is less than or equal to the number of requested features of this client
+		// if yes, then we need to lower the priorities of all the features which
+		// come after the newly created one
+		if ($priority <= $num_requested_features) {
+			$sql = "UPDATE feature_request_app.requested_feature
+					SET priority = priority + 1
+					WHERE client_id = '".$client_id."'
+					AND priority >= '".$priority."'";
+			mysqli_query($conn, $sql);
+		}
+
+		// insert into database
+		$sql = "INSERT INTO feature_request_app.requested_feature
+				SET title = '".$title."', client_id = '".$client_id."', priority = '".$priority."',
+					target_date = '".$date."', ticket_url = '".$url."', description = '".$desc."',
+					prod_area_id = '".$area."'";
+		$result = mysqli_query($conn, $sql);
+
+		// redirect to main page with a message
+		header('Location: ' . $_SERVER['PHP_SELF'] . '?sub_action=submit_successful');
+		exit();
+	}
 }
 ?>
 
@@ -213,6 +242,15 @@ if ($action == null) {
 		<h1>Requested Features</h1>
 
 		<div class="div-spacing"></div>
+
+		<?php
+		if ($sub_action == 'submit_successful') {
+			// show a message after submitted a new request successfully
+			?>
+			<div class="alert alert-success" role="alert"><strong>Successful!</strong></div>
+			<?php
+		}
+		?>
 
 		<div class="panel panel-default">
 			<div class="panel-body">
@@ -284,8 +322,21 @@ if ($action == null) {
 }
 
 /**************************************************
+ *** HELPER FUNCTIONS
+ **************************************************/
+function get_num_requested_features($conn, $client_id) {
+	// get the number of requested features of a specific client
+	$sql       = "SELECT COUNT(id) AS count
+				  FROM feature_request_app.requested_feature
+				  WHERE client_id = '".mysqli_real_escape_string($conn, $client_id)."'";
+	$result    = mysqli_query($conn, $sql);
+	$result    = mysqli_fetch_assoc($result);
+
+	return $result['count'];
+}
+
+/**************************************************
  *** FOOTER
  **************************************************/
 include_once('includes/footer.php');
 ?>
-
