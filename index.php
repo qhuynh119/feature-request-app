@@ -7,16 +7,71 @@
 /**************************************************
  *** INCLUDES
  **************************************************/
-include_once('includes/connection.php');
+include_once('includes/shared/connection.php');
+include_once('includes/shared/functions.php');
 ob_start();
+
+// redirect to sign in page if user is not logged in
+$id = null;
+
+if ($_SESSION['logged_in']) {
+	$id = $_SESSION['user']['id'];
+} else if ($_COOKIE['logged_in']) {
+	$id = $_COOKIE['id'];
+} else {
+	redirect('external_auth.php');
+}
 
 // get the action and sub_action value
 $action = $_GET['action'];
 $sub_action = $_GET['sub_action'];
 
 /**************************************************
+ *** LOG OUT
+ **************************************************/
+if ($action == 'log_out') {
+	setcookie('logged_in', '', time() - 3600, '/');
+
+	session_unset();
+	session_destroy();
+
+	redirect('external_auth.php');
+}
+
+/**************************************************
  *** AJAX FUNCTIONS
  **************************************************/
+if ($action == 'get_table_data') {
+	$client_id = $_GET['client_id'];
+
+	$sql = "SELECT rf.*, CONCAT(c.first_name, ' ', c.last_name) AS name
+			FROM feature_request_app.requested_feature AS rf
+			LEFT JOIN feature_request_app.client AS c
+			ON rf.client_id = c.id";
+
+	if ($client_id != '0') {
+		$sql .= " WHERE rf.client_id = '".$client_id."'";
+	}
+
+	$result = mysqli_query($conn, $sql);
+
+
+	while ($row = mysqli_fetch_assoc($result)) {
+		?>
+		<tr>
+			<td><?= $row['id'] ?></td>
+			<td><a href="#"><?= $row['title'] ?></a></td>
+			<td><a href="#"><?= $row['name'] ?></a></td>
+			<td><?= $row['target_date'] ?></td>
+			<td><?= $row['priority'] ?></td>
+		</tr>
+		<?php
+	}
+
+	// we don't need the rest of the script
+	exit();
+}
+
 if ($action == 'get_client_priority') {
 	// populate the client priority drop-down box
 	$client_id = $_GET['client_id'];
@@ -39,7 +94,7 @@ if ($action == 'get_client_priority') {
 /**************************************************
  *** HEADER
  **************************************************/
-include_once('includes/header.php');
+include_once('includes/shared/header.php');
 
 /**************************************************
  *** BODY
@@ -64,7 +119,7 @@ include_once('includes/header.php');
 		<div id="navbar-collapse" class="navbar-collapse collapse">
 			<!-- Sign In Link -->
 			<ul class="nav navbar-nav navbar-right">
-				<li><a href="./">Sign In</a></li>
+				<li><a href="?action=log_out">Log Out</a></li>
 			</ul>
 
 			<!-- Search Form -->
@@ -85,6 +140,10 @@ include_once('includes/header.php');
  *** REQUEST FORM
  **************************************************/
 if ($action == 'request_form') {
+	if (!is_logged_in()) {
+		// redirect to login page if not logged in
+		redirect('external_auth.php');
+	}
 	?>
 	<div class="container form">
 		<h1>Submit New Request</h1>
@@ -107,7 +166,8 @@ if ($action == 'request_form') {
 						<option></option>
 						<?php
 						$sql = "SELECT id, CONCAT(first_name, ' ',last_name) AS name
-								FROM feature_request_app.client";
+								FROM feature_request_app.client
+								WHERE user_id = '".mysqli_real_escape_string($conn, $id)."'";
 						$result = mysqli_query($conn, $sql);
 
 						while ($row = mysqli_fetch_assoc($result)) {
@@ -225,8 +285,7 @@ if ($action == 'submit_new_request') {
 		$result = mysqli_query($conn, $sql);
 
 		// redirect to main page with a message
-		header('Location: ' . $_SERVER['PHP_SELF'] . '?sub_action=submit_successful');
-		exit();
+		redirect('?sub_action=submit_successful');
 	}
 }
 ?>
@@ -261,11 +320,20 @@ if ($action == null) {
 				<div class="row">
 					<!-- Select Client -->
 					<div class="col-xs-5 col-sm-3 col-md-2">
-						<select class="form-control">
-							<option>All Clients</option>
-							<option>Client A</option>
-							<option>Client B</option>
-							<option>Client C</option>
+						<select id="client_filter" class="form-control" onchange="set_table_data();">
+							<option value="0">All Clients</option>
+							<?php
+							$sql = "SELECT id, CONCAT(first_name, ' ',last_name) AS name
+									FROM feature_request_app.client
+									WHERE user_id = '".mysqli_real_escape_string($conn, $id)."'";
+							$result = mysqli_query($conn, $sql);
+
+							while ($row = mysqli_fetch_assoc($result)) {
+								?>
+								<option value="<?= $row['id'] ?>"><?= $row['name'] ?></option>
+								<?php
+							}
+							?>
 						</select>
 					</div><!-- .col-xs-5 .col-sm-3 .col-md-2 -->
 
@@ -275,10 +343,10 @@ if ($action == null) {
 			</div><!-- .panel-body -->
 
 			<!-- Table -->
-			<table class="table">
+			<table id="feature_table" class="table">
 				<thead>
 				<tr>
-					<th><a href="#">No.</a></th>
+					<th><a href="#">ID</a></th>
 					<th><a href="#">Title</a></th>
 					<th><a href="#">Client</a></th>
 					<th><a href="#">Target Date</a></th>
@@ -286,34 +354,26 @@ if ($action == null) {
 				</tr>
 				</thead>
 				<tbody>
-				<tr>
-					<td>1</td>
-					<td><a href="#">Feature A1</a></td>
-					<td><a href="#">Client A</a></td>
-					<td>August 06, 2016</td>
-					<td>1</td>
-				</tr>
-				<tr>
-					<td>2</td>
-					<td><a href="#">Feature A2</a></td>
-					<td><a href="#">Client A</a></td>
-					<td>August 06, 2016</td>
-					<td>2</td>
-				</tr>
-				<tr>
-					<td>3</td>
-					<td><a href="#">Feature B1</a></td>
-					<td><a href="#">Client B</a></td>
-					<td>June 08, 2016</td>
-					<td>1</td>
-				</tr>
-				<tr>
-					<td>4</td>
-					<td><a href="#">Feature C1</a></td>
-					<td><a href="#">Client C</a></td>
-					<td>December 12, 2016</td>
-					<td>1</td>
-				</tr>
+					<?php
+					$sql = "SELECT rf.*, CONCAT(c.first_name, ' ', c.last_name) AS name
+							FROM feature_request_app.requested_feature AS rf
+							LEFT JOIN feature_request_app.client AS c
+							ON rf.client_id = c.id";
+
+					$result = mysqli_query($conn, $sql);
+
+					while ($row = mysqli_fetch_assoc($result)) {
+						?>
+						<tr>
+							<td><?= $row['id'] ?></td>
+							<td><a href="#"><?= $row['title'] ?></a></td>
+							<td><a href="#"><?= $row['name'] ?></a></td>
+							<td><?= $row['target_date'] ?></td>
+							<td><?= $row['priority'] ?></td>
+						</tr>
+						<?php
+					}
+					?>
 				</tbody>
 			</table>
 		</div>
@@ -322,21 +382,7 @@ if ($action == null) {
 }
 
 /**************************************************
- *** HELPER FUNCTIONS
- **************************************************/
-function get_num_requested_features($conn, $client_id) {
-	// get the number of requested features of a specific client
-	$sql       = "SELECT COUNT(id) AS count
-				  FROM feature_request_app.requested_feature
-				  WHERE client_id = '".mysqli_real_escape_string($conn, $client_id)."'";
-	$result    = mysqli_query($conn, $sql);
-	$result    = mysqli_fetch_assoc($result);
-
-	return $result['count'];
-}
-
-/**************************************************
  *** FOOTER
  **************************************************/
-include_once('includes/footer.php');
+include_once('includes/shared/footer.php');
 ?>
