@@ -12,12 +12,12 @@ include_once('includes/shared/functions.php');
 ob_start();
 
 // redirect to sign in page if user is not logged in
-$id = null;
+$user_id = null;
 
 if ($_SESSION['logged_in']) {
-	$id = $_SESSION['user']['id'];
+	$user_id = $_SESSION['user_id'];
 } else if ($_COOKIE['logged_in']) {
-	$id = $_COOKIE['id'];
+	$user_id = $_COOKIE['user_id'];
 } else {
 	redirect('external_auth.php');
 }
@@ -167,7 +167,7 @@ if ($action == 'request_form') {
 						<?php
 						$sql = "SELECT id, CONCAT(first_name, ' ',last_name) AS name
 								FROM feature_request_app.client
-								WHERE user_id = '".mysqli_real_escape_string($conn, $id)."'";
+								WHERE user_id = '".mysqli_real_escape_string($conn, $user_id)."'";
 						$result = mysqli_query($conn, $sql);
 
 						while ($row = mysqli_fetch_assoc($result)) {
@@ -325,7 +325,7 @@ if ($action == null) {
 							<?php
 							$sql = "SELECT id, CONCAT(first_name, ' ',last_name) AS name
 									FROM feature_request_app.client
-									WHERE user_id = '".mysqli_real_escape_string($conn, $id)."'";
+									WHERE user_id = '".mysqli_real_escape_string($conn, $user_id)."'";
 							$result = mysqli_query($conn, $sql);
 
 							while ($row = mysqli_fetch_assoc($result)) {

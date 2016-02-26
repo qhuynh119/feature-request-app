@@ -35,4 +35,30 @@ function redirect($url) {
     header('Location: ' . $url); //use absolute URI
     exit();
 }
+
+function check_password_strength($pwd) {
+    // this functions check the strength of the password when the user registers for an account
+    $error = '';
+    if (strlen($pwd) < 8) {
+        $error .= '• Password too short (at least 8 chars.)<br/>';
+    }
+    if (strlen($pwd) > 20) {
+        $error .= "• Password too long (at most 20 chars.)<br/>";
+    }
+    if (!preg_match("#[0-9]+#", $pwd)) {
+        $error .= "• Password must include at least one number<br/>";
+    }
+    if (!preg_match("#[a-z]+#", $pwd)) {
+        $error .= "• Password must include at least one letter<br/>";
+    }
+
+//    if( !preg_match("#[A-Z]+#", $pwd) ) {
+//        $error .= "Password must include at least one CAPS!";
+//    }
+//    if( !preg_match("#\W+#", $pwd) ) {
+//        $error .= "Password must include at least one symbol!";
+//    }
+
+    return $error;
+}
 ?>
