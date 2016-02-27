@@ -38,6 +38,18 @@ if ($action == 'log_out') {
 	redirect('external_auth.php');
 }
 
+// we check if the user has any client
+$sql = "SELECT COUNT(id) AS count
+			FROM feature_request_app.client
+			WHERE user_id = '".$user_id."'";
+$result = mysqli_query($conn, $sql);
+$result = mysqli_fetch_assoc($result);
+
+// check if the user has any client and if the user just signed up
+if ($result['count'] == 0 && $sub_action == null) {
+	redirect('?action=add_client&sub_action=no_client');
+}
+
 /**************************************************
  *** AJAX FUNCTIONS
  **************************************************/
@@ -137,6 +149,33 @@ include_once('includes/shared/header.php');
 
 <?php
 /**************************************************
+ *** ADD CLIENT
+ **************************************************/
+if ($action == 'add_client') {
+	?>
+	<div class="container form">
+		<h1>Add New Client</h1>
+
+		<div class="div-spacing"></div>
+
+		<?php
+		if ($sub_action == 'no_client') {
+			?>
+			<div class="alert alert-info"><strong>No worries.</strong> We redirected you here because you need to have at least one client in order to submit a new feature request.</div>
+			<?php
+		} else if ($sub_action == 'first_request') {
+			?>
+			<div class="alert alert-success"><strong>Welcome aboard!</strong> Please add a new client first before you start submitting new feature requests.</div>
+			<?php
+		}
+		?>
+	</div>
+	<?php
+}
+?>
+
+<?php
+/**************************************************
  *** REQUEST FORM
  **************************************************/
 if ($action == 'request_form') {
@@ -144,6 +183,7 @@ if ($action == 'request_form') {
 		// redirect to login page if not logged in
 		redirect('external_auth.php');
 	}
+
 	?>
 	<div class="container form">
 		<h1>Submit New Request</h1>
@@ -182,7 +222,7 @@ if ($action == 'request_form') {
 				<!-- ADD NEW CLIENT -->
 				<div class="form-group col-xs-2 col-sm-2 col-md-2">
 					<label for="add_client" style="visibility: hidden">A</label>
-					<button class="btn btn-default form-control" id="add_client" onclick="?action=add_client">
+					<button class="btn btn-default form-control" id="add_client"  onclick="window.location.href = '?action=add_client';">
 						<span class="glyphicon glyphicon-plus"></span>
 					</button>
 				</div>

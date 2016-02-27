@@ -141,7 +141,7 @@ if ($action == 'sign_up_submit') {
         setcookie('user_id', mysqli_insert_id($conn), time() + (86400 * 365), '/');
 
         // redirect to main page
-        redirect("index.php");
+        redirect("index.php?action=add_client&sub_action=first_request");
     }
 }
 ?>
