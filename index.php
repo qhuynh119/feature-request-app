@@ -39,15 +39,17 @@ if ($action == 'log_out') {
 }
 
 // we check if the user has any client
-$sql = "SELECT COUNT(id) AS count
+if ($action != 'submit_new_client') {
+	$sql = "SELECT COUNT(id) AS count
 			FROM feature_request_app.client
 			WHERE user_id = '".$user_id."'";
-$result = mysqli_query($conn, $sql);
-$result = mysqli_fetch_assoc($result);
+	$result = mysqli_query($conn, $sql);
+	$result = mysqli_fetch_assoc($result);
 
-// check if the user has any client and if the user just signed up
-if ($result['count'] == 0 && $sub_action == null) {
-	redirect('?action=add_client&sub_action=no_client');
+	// check if the user has any client and if the user just signed up
+	if ($result['count'] == 0 && $sub_action == null) {
+		redirect('?action=add_client&sub_action=no_client');
+	}
 }
 
 /**************************************************
@@ -169,8 +171,164 @@ if ($action == 'add_client') {
 			<?php
 		}
 		?>
+
+		<!-- ADD NEW CLIENT FORM -->
+		<form method="post" action="?action=submit_new_client<?= ($_GET['back'] != null) ? '&back='.$_GET['back'] : '' ?>">
+			<div class="row">
+				<!-- FIRST NAME -->
+				<div class="form-group col-xs-6 col-sm-6 col-md-6">
+					<label for="client_first_name">First Name <span class="red-text">*</span></label>
+					<input type="text" class="form-control" name="client_first_name" placeholder="First Name" required>
+				</div><!-- .form-group -->
+
+				<!-- LAST NAME -->
+				<div class="form-group col-xs-6 col-sm-6 col-md-6">
+					<label for="client_last_name">Last Name <span class="red-text">*</span></label>
+					<input type="text" class="form-control" name="client_last_name" placeholder="Last Name" required>
+				</div><!-- .form-group -->
+			</div><!-- .row -->
+
+			<div class="row">
+				<!-- EMAIL -->
+				<div class="form-group col-xs-12 col-sm-6 col-md-6">
+					<label for="client_email">Email <span class="red-text">*</span></label>
+					<input type="email" class="form-control" name="client_email" placeholder="Email" required>
+				</div><!-- .form-group -->
+
+				<!-- PHONE -->
+				<div class="form-group col-xs-12 col-sm-6 col-md-6">
+					<label for="client_phone">Phone <span class="red-text">*</span></label>
+					<input type="tel" maxlength="10" class="form-control" name="client_phone" placeholder="Phone" required>
+				</div><!-- .form-group -->
+			</div>
+
+			<hr/>
+
+			<div class="row">
+				<!-- ADDRESS LINE 1 -->
+				<div class="form-group col-xs-12 col-sm-12 col-md-12">
+					<label for="client_address_1">Address Line 1</label>
+					<input type="text" class="form-control" name="client_address_1" placeholder="Address Line 1">
+				</div><!-- .form-group -->
+
+				<!-- ADDRESS LINE 2 -->
+				<div class="form-group col-xs-12 col-sm-12 col-md-12">
+					<label for="client_address_2">Address Line 2</label>
+					<input type="text" class="form-control" name="client_address_2" placeholder="Address Line 2">
+				</div><!-- .form-group -->
+			</div>
+
+			<div class="row">
+				<!-- CITY -->
+				<div class="form-group col-xs-5 col-sm-5 col-md-5">
+					<label for="client_city">City</label>
+					<input type="text" class="form-control" name="client_city" placeholder="City">
+				</div><!-- .form-group -->
+
+				<!-- STATE -->
+				<div class="form-group col-xs-2 col-sm-2 col-md-2">
+					<label for="client_occupation">State</label>
+					<input type="text" maxlength="2" class="form-control" name="client_state" placeholder="State">
+				</div><!-- .form-group -->
+
+				<!-- POSTAL CODE -->
+				<div class="form-group col-xs-5 col-sm-5 col-md-5">
+					<label for="client_postal_code">Postal Code</label>
+					<input type="text" maxlength="5" class="form-control" name="client_postal_code" placeholder="Postal Code">
+				</div><!-- .form-group -->
+			</div>
+
+			<hr/>
+
+			<div class="row">
+				<!-- COMPANY -->
+				<div class="form-group col-xs-12 col-sm-6 col-md-6">
+					<label for="client_company">Company <span class="red-text">*</span></label>
+					<input type="text" class="form-control" name="client_company" placeholder="Company" required>
+				</div><!-- .form-group -->
+
+				<!-- OCCUPATION -->
+				<div class="form-group col-xs-12 col-sm-6 col-md-6">
+					<label for="client_occupation">Occupation <span class="red-text">*</span></label>
+					<input type="text" class="form-control" name="client_occupation" placeholder="Occupation" required>
+				</div><!-- .form-group -->
+			</div>
+
+			<div class="clear"></div>
+
+			<!-- METHOD OF CONTACT -->
+			<div class="row">
+				<div class="form-group col-xs-6 col-sm-6 col-md-6">
+					<label for="client_contact_method">Preferred Method of Contact <span class="red-text">*</span></label>
+					<select id="feature_client" class="form-control" name="client_contact_method" required onchange="set_client_priority();">
+						<option></option>
+						<option value="email">Email</option>
+						<option value="phone">Phone</option>
+					</select>
+				</div><!-- .form-group -->
+
+			</div>
+
+			<div class="clear"></div>
+
+			<hr/>
+
+			<!-- ADDITIONAL NOTES -->
+			<div class="form-group">
+				<label for="client_notes">Additional Notes</label>
+				<textarea class="form-control" name="client_notes" rows="3"></textarea>
+			</div><!-- .form-group -->
+
+			<br/>
+
+			<!-- SUBMIT -->
+			<button type="submit" class="btn-lg btn-primary">Submit</button>
+		</form>
 	</div>
 	<?php
+}
+?>
+
+<?php
+/**************************************************
+ *** SUBMIT NEW CLIENT
+ **************************************************/
+if ($action == 'submit_new_client') {
+	// insert new feature record into the database
+	if (isset($_POST)) {
+		$first_name = mysqli_real_escape_string($conn, $_POST['client_first_name']);
+		$last_name  = mysqli_real_escape_string($conn, $_POST['client_last_name']);
+		$email      = mysqli_real_escape_string($conn, $_POST['client_email']);
+		$phone      = mysqli_real_escape_string($conn, $_POST['client_phone']);
+		$address_1  = mysqli_real_escape_string($conn, $_POST['client_address_1']);
+		$address_2  = mysqli_real_escape_string($conn, $_POST['client_address_2']);
+		$city       = mysqli_real_escape_string($conn, $_POST['client_city']);
+		$state      = mysqli_real_escape_string($conn, $_POST['client_state']);
+		$p_code     = mysqli_real_escape_string($conn, $_POST['client_postal_code']);
+		$company    = mysqli_real_escape_string($conn, $_POST['client_company']);
+		$occupation = mysqli_real_escape_string($conn, $_POST['client_occupation']);
+		$c_method   = mysqli_real_escape_string($conn, $_POST['client_contact_method']);
+		$notes      = mysqli_real_escape_string($conn, $_POST['client_notes']);
+
+		// insert into database
+		$sql = "INSERT INTO feature_request_app.client
+				SET first_name = '".$first_name."', last_name = '".$last_name."', email = '".$email."',
+					phone = '".$phone."', address_1 = '".$address_1."', address_2 = '".$address_2."',
+					city = '".$city."', state = '".$state."', postal_code = '".$p_code."',
+					company = '".$company."', occupation = '".$occupation."', contact_method = '".$c_method."',
+					notes = '".$notes."', user_id = '".$user_id."'";
+		$result = mysqli_query($conn, $sql);
+
+		if ($_GET['back'] != null) {
+			// redirect to main page with a message
+			$back_url = urldecode($_GET['back']);
+
+			redirect($back_url . ((strpos($back_url, '?') == -1) ? '?' : '&') .'sub_action=submit_client_successful');
+		} else {
+			// redirect to main page with a message
+			redirect('?sub_action=submit_client_successful');
+		}
+	}
 }
 ?>
 
@@ -189,6 +347,14 @@ if ($action == 'request_form') {
 		<h1>Submit New Request</h1>
 
 		<div class="div-spacing"></div>
+
+		<?php
+		if ($sub_action == 'submit_client_successful') {
+			?>
+			<div class="alert alert-success" role="alert"><strong>New Client Added Successfully!</strong></div>
+			<?php
+		}
+		?>
 
 		<!-- SUBMIT NEW FEATURE FORM -->
 		<form method="post" action="?action=submit_new_request">
@@ -222,7 +388,7 @@ if ($action == 'request_form') {
 				<!-- ADD NEW CLIENT -->
 				<div class="form-group col-xs-2 col-sm-2 col-md-2">
 					<label for="add_client" style="visibility: hidden">A</label>
-					<button class="btn btn-default form-control" id="add_client"  onclick="window.location.href = '?action=add_client';">
+					<button class="btn btn-default form-control" id="add_client"  onclick="window.location.href = '?action=add_client&back=<?= urlencode('http'.(isset($_SERVER['HTTPS']) ? 's' : '') . '://' . "{$_SERVER['HTTP_HOST']}/{$_SERVER['REQUEST_URI']}") ?>';">
 						<span class="glyphicon glyphicon-plus"></span>
 					</button>
 				</div>
@@ -271,7 +437,7 @@ if ($action == 'request_form') {
 			<!-- TICKET URL -->
 			<div class="form-group">
 				<label for="feature_url">Ticket URL</label>
-				<input type="text" class="form-control" name="feature_url" placeholder="Ticket URL">
+				<input type="url" class="form-control" name="feature_url" placeholder="Ticket URL">
 			</div><!-- .form-group -->
 
 			<!-- FEATURE DESCRIPTION -->
@@ -321,12 +487,21 @@ if ($action == 'submit_new_request') {
 		$sql = "INSERT INTO feature_request_app.requested_feature
 				SET title = '".$title."', client_id = '".$client_id."', priority = '".$priority."',
 					target_date = '".$date."', ticket_url = '".$url."', description = '".$desc."',
-					prod_area_id = '".$area."'";
+					prod_area_id = '".$area."', user_id = '".$user_id."'";
 		$result = mysqli_query($conn, $sql);
 
 		// redirect to main page with a message
-		redirect('?sub_action=submit_successful');
+		redirect('?sub_action=submit_request_successful');
 	}
+}
+?>
+
+<?php
+/**************************************************
+ *** VIEW REQUEST
+ **************************************************/
+if ($action == 'submit_new_request') {
+
 }
 ?>
 
@@ -343,10 +518,15 @@ if ($action == null) {
 		<div class="div-spacing"></div>
 
 		<?php
-		if ($sub_action == 'submit_successful') {
+		if ($sub_action == 'submit_request_successful') {
 			// show a message after submitted a new request successfully
 			?>
-			<div class="alert alert-success" role="alert"><strong>Successful!</strong></div>
+			<div class="alert alert-success" role="alert"><strong>Feature Submitted Successfully!</strong></div>
+			<?php
+		} else if ($sub_action == 'submit_client_successful') {
+			// show a message after added a new client successfully
+			?>
+			<div class="alert alert-success" role="alert"><strong>Client Added Successfully!</strong></div>
 			<?php
 		}
 		?>

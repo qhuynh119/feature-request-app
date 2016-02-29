@@ -14,6 +14,12 @@
     margin-bottom: 100px;
 }
 
+@media (min-width: 600px) {
+    .form {
+        padding: 0 18%;
+    }
+}
+
 /* Small devices (tablets, 768px and up) */
 @media (min-width: 768px) {
     .form {
