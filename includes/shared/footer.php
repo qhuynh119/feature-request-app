@@ -21,6 +21,7 @@
         }
 
         function set_table_data() {
+            // populate requested features table based on specific client
             console.log($('#client_filter').val());
             $.ajax({
                 url: '<?= $_SERVER['PHP_SELF'] ?>',

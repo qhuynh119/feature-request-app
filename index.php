@@ -61,10 +61,11 @@ if ($action == 'get_table_data') {
 	$sql = "SELECT rf.*, CONCAT(c.first_name, ' ', c.last_name) AS name
 			FROM feature_request_app.requested_feature AS rf
 			LEFT JOIN feature_request_app.client AS c
-			ON rf.client_id = c.id";
+			ON rf.client_id = c.id
+			WHERE rf.user_id = '".$user_id."'";
 
 	if ($client_id != '0') {
-		$sql .= " WHERE rf.client_id = '".$client_id."'";
+		$sql .= " AND rf.client_id = '".$client_id."'";
 	}
 
 	$result = mysqli_query($conn, $sql);
@@ -74,10 +75,10 @@ if ($action == 'get_table_data') {
 		?>
 		<tr>
 			<td><?= $row['id'] ?></td>
-			<td><a href="#"><?= $row['title'] ?></a></td>
-			<td><a href="#"><?= $row['name'] ?></a></td>
-			<td><?= $row['target_date'] ?></td>
-			<td><?= $row['priority'] ?></td>
+			<td><a href="?action=view_request&request_id=<?= $row['id'] ?>"><?= $row['title'] ?></a></td>
+			<td><a href="?action=view_client&client_id=<?= $row['client_id'] ?>"><?= $row['name'] ?></a></a></td>
+			<td><?= date_format(date_create($row['target_date']), 'F d, Y') ?></td>
+			<td><span class="badge"><?= $row['priority'] ?></span></td>
 		</tr>
 		<?php
 	}
@@ -116,7 +117,7 @@ include_once('includes/shared/header.php');
 ?>
 <!-------- NAVBAR -------->
 <nav class="navbar navbar-default navbar-static-top">
-	<div class="container">
+	<div class="container-fluid">
 		<div class="navbar-header">
 			<!-- Mobile Three-bar Button -->
 			<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse" aria-expanded="false">
@@ -127,22 +128,24 @@ include_once('includes/shared/header.php');
 			</button>
 
 			<!-- App Title -->
-			<a class="navbar-brand" href="<?= $_SERVER['PHP_SELF'] ?>">Feature Request App</a>
+			<a class="navbar-brand" href="<?= $_SERVER['PHP_SELF'] ?>">F.R.App</a>
 		</div><!-- .navbar-header -->
 
 		<div id="navbar-collapse" class="navbar-collapse collapse">
 			<!-- Sign In Link -->
 			<ul class="nav navbar-nav navbar-right">
+				<li><a href="#">Requests</a></li>
+				<li><a href="#">Clients</a></li>
 				<li><a href="?action=log_out">Log Out</a></li>
 			</ul>
 
 			<!-- Search Form -->
-			<form class="navbar-form navbar-right" role="search">
-				<div class="form-group">
-					<input type="text" class="form-control" placeholder="Search">
-				</div>
-				<button type="submit" class="btn btn-default">Submit</button>
-			</form>
+<!--			<form class="navbar-form navbar-right" role="search">-->
+<!--				<div class="form-group">-->
+<!--					<input type="text" class="form-control" placeholder="Search">-->
+<!--				</div>-->
+<!--				<button type="submit" class="btn btn-default">Submit</button>-->
+<!--			</form>-->
 		</div><!-- #navbar .navbar-collapse -->
 	</div><!-- .container -->
 </nav>
@@ -156,7 +159,9 @@ include_once('includes/shared/header.php');
 if ($action == 'add_client') {
 	?>
 	<div class="container form">
-		<h1>Add New Client</h1>
+		<div class="page-header">
+			<h1>Add New Client</h1>
+		</div>
 
 		<div class="div-spacing"></div>
 
@@ -198,9 +203,9 @@ if ($action == 'add_client') {
 				<!-- PHONE -->
 				<div class="form-group col-xs-12 col-sm-6 col-md-6">
 					<label for="client_phone">Phone <span class="red-text">*</span></label>
-					<input type="tel" maxlength="10" class="form-control" name="client_phone" placeholder="Phone" required>
+					<input type="tel" pattern="^(\([0-9]{3}\) |[0-9]{3}-)[0-9]{3}-[0-9]{4}$" maxlength="14" class="form-control" name="client_phone" placeholder="(123) 456-7890" required>
 				</div><!-- .form-group -->
-			</div>
+			</div><!-- .row -->
 
 			<hr/>
 
@@ -216,7 +221,7 @@ if ($action == 'add_client') {
 					<label for="client_address_2">Address Line 2</label>
 					<input type="text" class="form-control" name="client_address_2" placeholder="Address Line 2">
 				</div><!-- .form-group -->
-			</div>
+			</div><!-- .row -->
 
 			<div class="row">
 				<!-- CITY -->
@@ -236,7 +241,7 @@ if ($action == 'add_client') {
 					<label for="client_postal_code">Postal Code</label>
 					<input type="text" maxlength="5" class="form-control" name="client_postal_code" placeholder="Postal Code">
 				</div><!-- .form-group -->
-			</div>
+			</div><!-- .row -->
 
 			<hr/>
 
@@ -252,7 +257,7 @@ if ($action == 'add_client') {
 					<label for="client_occupation">Occupation <span class="red-text">*</span></label>
 					<input type="text" class="form-control" name="client_occupation" placeholder="Occupation" required>
 				</div><!-- .form-group -->
-			</div>
+			</div><!-- .row -->
 
 			<div class="clear"></div>
 
@@ -262,12 +267,11 @@ if ($action == 'add_client') {
 					<label for="client_contact_method">Preferred Method of Contact <span class="red-text">*</span></label>
 					<select id="feature_client" class="form-control" name="client_contact_method" required onchange="set_client_priority();">
 						<option></option>
-						<option value="email">Email</option>
-						<option value="phone">Phone</option>
+						<option value="Email">Email</option>
+						<option value="Phone">Phone</option>
 					</select>
 				</div><!-- .form-group -->
-
-			</div>
+			</div><!-- .row -->
 
 			<div class="clear"></div>
 
@@ -284,7 +288,7 @@ if ($action == 'add_client') {
 			<!-- SUBMIT -->
 			<button type="submit" class="btn-lg btn-primary">Submit</button>
 		</form>
-	</div>
+	</div><!-- .container .form -->
 	<?php
 }
 ?>
@@ -344,7 +348,9 @@ if ($action == 'request_form') {
 
 	?>
 	<div class="container form">
-		<h1>Submit New Request</h1>
+		<div class="page-header">
+			<h1>Submit New Request</h1>
+		</div>
 
 		<div class="div-spacing"></div>
 
@@ -446,6 +452,8 @@ if ($action == 'request_form') {
 				<textarea class="form-control" name="feature_description" rows="3" required></textarea>
 			</div><!-- .form-group -->
 
+			<br/>
+
 			<!-- SUBMIT -->
 			<button type="submit" class="btn-lg btn-primary">Submit</button>
 		</form>
@@ -500,8 +508,223 @@ if ($action == 'submit_new_request') {
 /**************************************************
  *** VIEW REQUEST
  **************************************************/
-if ($action == 'submit_new_request') {
+if ($action == 'view_request') {
+	$req_id = $_GET['request_id'];
 
+	$sql = "SELECT rf.*, pa.name AS prod_area_name, CONCAT(c.first_name, ' ', c.last_name) AS name
+			FROM feature_request_app.requested_feature AS rf
+			LEFT JOIN feature_request_app.client AS c
+			ON rf.client_id = c.id
+			LEFT JOIN feature_request_app.product_area AS pa
+			ON rf.prod_area_id = pa.id
+			WHERE rf.id = '".$req_id."'";
+
+	$result = mysqli_query($conn, $sql);
+	$result = mysqli_fetch_assoc($result);
+	?>
+	<div class="container form">
+		<div class="page-header">
+			<h1>Feature Request <small>ID#<?= $req_id ?></small></h1>
+		</div><!-- .page-header -->
+
+		<div class="div-spacing"></div>
+
+		<ul class="list-group">
+			<li class="list-group-item list-group-item-info">
+				<h6>TITLE</h6>
+				<h4><?= $result['title'] ?></h4>
+			</li>
+		</ul>
+
+		<!-- TABLE -->
+		<table id="feature_table" class="table">
+			<tbody>
+				<tr>
+					<td><strong>Client</strong></td>
+					<td><a href="?action=view_client&client_id=<?= $result['client_id'] ?>"><?= $result['name'] ?></a></td>
+				</tr>
+				<tr>
+					<td><strong>Priority</strong></td>
+					<td><span class="badge"><?= $result['priority'] ?></span></td>
+				</tr>
+				<tr>
+					<td><strong>Target Date</strong></td>
+					<td><?= date_format(date_create($result['target_date']), 'F d, Y') ?></td>
+				</tr>
+				<tr>
+					<td><strong>Product Area</strong></td>
+					<td><?= $result['prod_area_name'] ?></td>
+				</tr>
+				<tr <?= ($result['ticket_url'] == null) ? 'hidden' : '' ?>>
+					<td><strong>Ticket URL</strong></td>
+					<td><a href="<?= $result['ticket_url'] ?>"><?= $result['ticket_url'] ?></td>
+				</tr>
+				<tr>
+					<td><strong>Created By</strong></td>
+					<td><?= date_format(date_create($result['created']), 'F d, Y h:i:s A') ?></td>
+				</tr>
+				<tr>
+					<td><strong>Modified By</strong></td>
+					<td><?= ($result['modified'] == null) ? 'N/A' : date_format(date_create($result['modified']), 'F d, Y h:i:s A') ?></td>
+				</tr>
+				<tr>
+					<td><strong>Description</strong></td>
+					<td><?= $result['description'] ?></td>
+				</tr>
+			</tbody>
+		</table>
+
+		<button class="btn btn-primary">Edit Request</button>
+
+		<button class="btn btn-danger" onclick="if (confirm('Are you sure you want to delete this feature request? This action cannot be undone.')) window.location.href = '?action=delete_request&request_id=<?= $req_id ?>';">Delete Request</button>
+	</div><!-- .container .form -->
+	<?php
+}
+?>
+
+<?php
+/**************************************************
+ *** VIEW CLIENT
+ **************************************************/
+if ($action == 'view_client') {
+	$client_id = $_GET['client_id'];
+
+	$sql = "SELECT *, CONCAT(first_name, ' ', last_name) AS name, CONCAT(address_1, '<br/>', address_2) AS address
+			FROM feature_request_app.client
+			WHERE id = '".$client_id."'";
+
+	$result = mysqli_query($conn, $sql);
+	$result = mysqli_fetch_assoc($result);
+	?>
+	<div class="container form">
+		<div class="page-header">
+			<h1>Client <small>ID#<?= $client_id ?></small></h1>
+		</div><!-- .page-header -->
+
+		<div class="div-spacing"></div>
+
+		<ul class="list-group">
+			<li class="list-group-item list-group-item-info">
+				<h6>FULL NAME</h6>
+				<h4><?= $result['name'] ?></h4>
+			</li>
+		</ul>
+
+		<!-- TABLE -->
+		<table id="feature_table" class="table">
+			<tbody>
+				<tr>
+					<td><strong>Email</strong></td>
+					<td><a href="mailto:<?= $result['email'] ?>"><?= $result['email'] ?></a></td>
+				</tr>
+				<tr>
+					<td><strong>Phone</strong></td>
+					<td><a href="tel:<?= $result['phone'] ?>"><?= $result['phone'] ?></td>
+				</tr>
+				<tr>
+					<td><strong>Occupation</strong></td>
+					<td><?= $result['occupation'] ?></td>
+				</tr>
+				<tr <?= ($result['address'] == '<br/>') ? 'hidden' : '' ?>>
+					<td><strong>Address</strong></td>
+					<td><?= $result['address'] ?></td>
+				</tr>
+				<tr <?= ($result['city'] == null) ? 'hidden' : '' ?>>
+					<td><strong>City</strong></td>
+					<td><?= $result['city'] ?></td>
+				</tr>
+				<tr <?= ($result['state'] == null) ? 'hidden' : '' ?>>
+					<td><strong>State</strong></td>
+					<td><?= $result['state'] ?></td>
+				</tr>
+				<tr <?= ($result['postal_code'] == null) ? 'hidden' : '' ?>>
+					<td><strong>Postal Code</strong></td>
+					<td><?= $result['postal_code'] ?></td>
+				</tr>
+				<tr>
+					<td><strong>Preferred</strong></td>
+					<td><?= $result['contact_method'] ?></td>
+				</tr>
+				<tr>
+					<td><strong>Created By</strong></td>
+					<td><?= date_format(date_create($result['created']), 'F d, Y h:i:s A') ?></td>
+				</tr>
+				<tr>
+					<td><strong>Modified By</strong></td>
+					<td><?= ($result['modified'] == null) ? 'N/A' : date_format(date_create($result['modified']), 'F d, Y h:i:s A') ?></td>
+				</tr>
+				<tr <?= ($result['notes'] == null) ? 'hidden' : '' ?>>
+					<td><strong>Notes</strong></td>
+					<td><?= $result['notes'] ?></td>
+				</tr>
+				<?php
+				$sql = "SELECT COUNT(id) AS count
+						FROM feature_request_app.requested_feature
+						WHERE client_id = '".$client_id."'";
+				$result = mysqli_query($conn, $sql);
+				$result = mysqli_fetch_assoc($result);
+				?>
+				<tr>
+					<td><strong># of Requested Features</strong></td>
+					<td><?= $result['count'] ?></td>
+				</tr>
+			</tbody>
+		</table>
+
+		<button class="btn btn-primary">Edit Client</button>
+
+		<button class="btn btn-danger" onclick="if (confirm('All related requested features will also be deleted. Are you sure you want to delete this client?')) window.location.href = '?action=delete_client&client_id=<?= $client_id ?>';">Delete Client</button>
+	</div><!-- .container .form -->
+	<?php
+}
+?>
+
+<?php
+/**************************************************
+ *** DELETE REQUEST
+ **************************************************/
+if ($action == 'delete_request') {
+	$req_id = $_GET['request_id'];
+
+	$sql = "SELECT client_id, priority
+			FROM feature_request_app.requested_feature
+			WHERE id = '".$req_id."'";
+	$result = mysqli_query($conn, $sql);
+	$result = mysqli_fetch_assoc($result);
+
+	$client_id = $result['client_id'];
+	$priority  = $result['priority'];
+
+	// delete request
+	$sql = "DELETE FROM feature_request_app.requested_feature
+			WHERE id = '".$req_id."'";
+	mysqli_query($conn, $sql);
+
+	// update priorities of the remaining requests
+	$sql = "UPDATE feature_request_app.requested_feature
+			SET priority = priority - 1
+			WHERE client_id = '".$client_id."'
+			AND user_id = '".$user_id."'
+			AND priority > '".$priority."'";
+	mysqli_query($conn, $sql);
+
+	redirect('?sub_action=delete_request_successful&request_id='.$req_id);
+}
+?>
+
+<?php
+/**************************************************
+ *** DELETE CLIENT
+ **************************************************/
+if ($action == 'delete_client') {
+	$client_id = $_GET['client_id'];
+
+	// delete request
+	$sql = "DELETE FROM feature_request_app.client
+			WHERE id = '".$client_id."'";
+	mysqli_query($conn, $sql);
+
+	redirect('?sub_action=delete_client_successful&client_id='.$client_id);
 }
 ?>
 
@@ -513,7 +736,9 @@ if ($action == null) {
 	?>
 	<!-------- REQUESTED FEATURES TABLE -------->
 	<div class="container">
-		<h1>Requested Features</h1>
+		<div class="page-header">
+			<h1>Requested Features</h1>
+		</div>
 
 		<div class="div-spacing"></div>
 
@@ -521,12 +746,22 @@ if ($action == null) {
 		if ($sub_action == 'submit_request_successful') {
 			// show a message after submitted a new request successfully
 			?>
-			<div class="alert alert-success" role="alert"><strong>Feature Submitted Successfully!</strong></div>
+			<div class="alert alert-success" role="alert"><strong>Feature was successfully submitted!</strong></div>
 			<?php
 		} else if ($sub_action == 'submit_client_successful') {
 			// show a message after added a new client successfully
 			?>
-			<div class="alert alert-success" role="alert"><strong>Client Added Successfully!</strong></div>
+			<div class="alert alert-success" role="alert"><strong>Client was successfully added!</strong></div>
+			<?php
+		} else if ($sub_action == 'delete_request_successful') {
+			// show a message after deleted a request successfully
+			?>
+			<div class="alert alert-success" role="alert"><strong>Deleted request ID#<?= $_GET['request_id'] ?> successfully!</strong></div>
+			<?php
+		} else if ($sub_action == 'delete_client_successful') {
+			// show a message after deleted a client successfully
+			?>
+			<div class="alert alert-success" role="alert"><strong>Deleted client ID#<?= $_GET['client_id'] ?> successfully!</strong></div>
 			<?php
 		}
 		?>
@@ -578,7 +813,8 @@ if ($action == null) {
 					$sql = "SELECT rf.*, CONCAT(c.first_name, ' ', c.last_name) AS name
 							FROM feature_request_app.requested_feature AS rf
 							LEFT JOIN feature_request_app.client AS c
-							ON rf.client_id = c.id";
+							ON rf.client_id = c.id
+							WHERE rf.user_id = '".$user_id."'";
 
 					$result = mysqli_query($conn, $sql);
 
@@ -586,10 +822,10 @@ if ($action == null) {
 						?>
 						<tr>
 							<td><?= $row['id'] ?></td>
-							<td><a href="#"><?= $row['title'] ?></a></td>
-							<td><a href="#"><?= $row['name'] ?></a></td>
-							<td><?= $row['target_date'] ?></td>
-							<td><?= $row['priority'] ?></td>
+							<td><a href="?action=view_request&request_id=<?= $row['id'] ?>"><?= $row['title'] ?></a></td>
+							<td><a href="?action=view_client&client_id=<?= $row['client_id'] ?>"><?= $row['name'] ?></a></td>
+							<td><?= date_format(date_create($row['target_date']), 'F d, Y') ?></td>
+							<td><span class="badge"><?= $row['priority'] ?></span></td>
 						</tr>
 						<?php
 					}
