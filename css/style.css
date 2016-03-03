@@ -1,3 +1,16 @@
+body {
+    font-family: 'Lato', sans-serif;
+    color: #777;
+}
+
+body a {
+    color: #000;
+}
+
+body a:hover {
+    color: #000;
+}
+
 .red-text {
     color: red;
 }
@@ -24,20 +37,71 @@
     padding: 0 120px;
 }
 
+.navbar .container-fluid a:hover {
+    color: #ffffff;
+}
+
+.navbar .container-fluid ul li a:hover {
+    text-decoration: underline;
+    color: #ffffff;
+}
+
+.navbar .container-fluid ul li a:focus {
+    color: #ffffff;
+}
+
 .navbar-default .navbar-brand{
     color: #ffffff;
+    font-weight: 700;
 }
 
 .navbar .container-fluid ul li a {
     color: #ffffff;
 }
 
+.navbar-title {
+    color: #ffffff;
+    font-size: 30px;
+    padding-top: 100px;
+    font-weight: 900;
+    width: 100%;
+    text-align: center;
+}
+
+.form {
+    margin-bottom: 100px;
+}
+
+/* 600px and lower */
 @media (min-width: 600px) {
     .form {
         padding: 0 18%;
     }
 }
 
+/* 768px and lower */
+@media (max-width: 768px) {
+    .navbar {
+        padding-top: 10px;
+    }
+
+    .navbar .container-fluid {
+        padding: 0 20px;
+    }
+
+    .navbar-title {
+        padding-top: 95px;
+    }
+}
+
+/* 768px and up */
+@media (min-width: 768px) {
+    .form {
+        padding: 0 8%;
+    }
+}
+
+/* 880px and lower */
 @media (max-width: 880px) {
     .form {
         padding: 0 8%;
@@ -48,24 +112,20 @@
         background-size: cover;
         background-position: 30%;
     }
-}
 
-/* Small devices (tablets, 768px and up) */
-@media (min-width: 768px) {
-    .form {
-        padding: 0 8%;
+    .navbar-title {
+        padding-top: 70px;
     }
-
 }
 
-/* Medium devices (desktops, 992px and up) */
+/* 992px and up */
 @media (min-width: 992px) {
     .form {
         padding: 0 15%;
     }
 }
 
-/* Large devices (large desktops, 1200px and up) */
+/* 1200px and up */
 @media (min-width: 1200px) {
     .form {
         padding: 0 20%;

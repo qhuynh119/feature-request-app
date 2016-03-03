@@ -48,7 +48,7 @@ if ($action != 'submit_new_client') {
 
 	// check if the user has any client and if the user just signed up
 	if ($result['count'] == 0 && $sub_action == null) {
-		redirect('?action=add_client&sub_action=no_client');
+		redirect('?action=client_form&sub_action=no_client');
 	}
 }
 
@@ -69,18 +69,26 @@ if ($action == 'get_table_data') {
 	}
 
 	$result = mysqli_query($conn, $sql);
+	$num_rows = mysqli_num_rows($result);
 
-
-	while ($row = mysqli_fetch_assoc($result)) {
+	if ($num_rows == 0) {
 		?>
 		<tr>
-			<td><?= $row['id'] ?></td>
-			<td><a href="?action=view_request&request_id=<?= $row['id'] ?>"><?= $row['title'] ?></a></td>
-			<td><a href="?action=view_client&client_id=<?= $row['client_id'] ?>"><?= $row['name'] ?></a></a></td>
-			<td><?= date_format(date_create($row['target_date']), 'F d, Y') ?></td>
-			<td><span class="badge"><?= $row['priority'] ?></span></td>
+			<td colspan="5" style="text-align: center;"><i>No available requests</i></td>
 		</tr>
 		<?php
+	} else {
+		while ($row = mysqli_fetch_assoc($result)) {
+			?>
+			<tr>
+				<td><?= $row['id'] ?></td>
+				<td><a href="?action=view_request&request_id=<?= $row['id'] ?>"><?= $row['title'] ?></a></td>
+				<td><a href="?action=view_client&client_id=<?= $row['client_id'] ?>"><?= $row['name'] ?></a></a></td>
+				<td><?= date_format(date_create($row['target_date']), 'F d, Y') ?></td>
+				<td><span class="badge"><?= $row['priority'] ?></span></td>
+			</tr>
+			<?php
+		}
 	}
 
 	// we don't need the rest of the script
@@ -128,43 +136,56 @@ include_once('includes/shared/header.php');
 			</button>
 
 			<!-- App Title -->
-			<a class="navbar-brand" href="<?= $_SERVER['PHP_SELF'] ?>">F.R.App</a>
+			<a class="navbar-brand" href="<?= $_SERVER['PHP_SELF'] ?>">FEATURE REQUEST APP</a>
 		</div><!-- .navbar-header -->
 
 		<div id="navbar-collapse" class="navbar-collapse collapse">
 			<!-- Sign In Link -->
 			<ul class="nav navbar-nav navbar-right">
-				<li><a href="#">Requests</a></li>
-				<li><a href="#">Clients</a></li>
-				<li><a href="?action=log_out">Log Out</a></li>
+				<li><a href="<?= $_SERVER['PHP_SELF'] ?>">REQUESTS</a></li>
+				<li><a href="?action=show_all_clients">CLIENTS</a></li>
+				<li><a href="?action=log_out">LOG OUT</a></li>
 			</ul>
-
-			<!-- Search Form -->
-<!--			<form class="navbar-form navbar-right" role="search">-->
-<!--				<div class="form-group">-->
-<!--					<input type="text" class="form-control" placeholder="Search">-->
-<!--				</div>-->
-<!--				<button type="submit" class="btn btn-default">Submit</button>-->
-<!--			</form>-->
 		</div><!-- #navbar .navbar-collapse -->
+
+		<div class="navbar-title">
+			<?php
+			$title = '';
+
+			switch ($action) {
+				case 'request_form':
+					$title = 'SUBMIT REQUEST';
+					break;
+				case 'client_form':
+					$title = 'ADD CLIENT';
+					break;
+				case 'view_request':
+					$title = "REQUEST <small>#</small>".$_GET['request_id'];
+					break;
+				case 'view_client':
+					$title = "CLIENT <small>#</small>".$_GET['client_id'];
+					break;
+				case 'show_all_clients':
+					$title = 'CLIENTS';
+					break;
+				default:
+					$title = 'REQUESTS';
+					break;
+			}
+
+			echo $title;
+			?>
+		</div>
 	</div><!-- .container -->
 </nav>
-
-<div class="div-spacing"></div>
 
 <?php
 /**************************************************
  *** ADD CLIENT
  **************************************************/
-if ($action == 'add_client') {
+if ($action == 'client_form') {
 	?>
 	<div class="container form">
-		<div class="page-header">
-			<h1>Add New Client</h1>
-		</div>
-
-		<div class="div-spacing"></div>
-
 		<?php
 		if ($sub_action == 'no_client') {
 			?>
@@ -348,16 +369,10 @@ if ($action == 'request_form') {
 
 	?>
 	<div class="container form">
-		<div class="page-header">
-			<h1>Submit New Request</h1>
-		</div>
-
-		<div class="div-spacing"></div>
-
 		<?php
 		if ($sub_action == 'submit_client_successful') {
 			?>
-			<div class="alert alert-success" role="alert"><strong>New Client Added Successfully!</strong></div>
+			<div class="alert alert-success" role="alert"><strong>New client added successfully!</strong></div>
 			<?php
 		}
 		?>
@@ -394,7 +409,7 @@ if ($action == 'request_form') {
 				<!-- ADD NEW CLIENT -->
 				<div class="form-group col-xs-2 col-sm-2 col-md-2">
 					<label for="add_client" style="visibility: hidden">A</label>
-					<button class="btn btn-default form-control" id="add_client"  onclick="window.location.href = '?action=add_client&back=<?= urlencode('http'.(isset($_SERVER['HTTPS']) ? 's' : '') . '://' . "{$_SERVER['HTTP_HOST']}/{$_SERVER['REQUEST_URI']}") ?>';">
+					<button class="btn btn-default form-control" id="add_client"  onclick="window.location.href = '?action=client_form&back=<?= back_url() ?>';">
 						<span class="glyphicon glyphicon-plus"></span>
 					</button>
 				</div>
@@ -523,12 +538,6 @@ if ($action == 'view_request') {
 	$result = mysqli_fetch_assoc($result);
 	?>
 	<div class="container form">
-		<div class="page-header">
-			<h1>Feature Request <small>ID#<?= $req_id ?></small></h1>
-		</div><!-- .page-header -->
-
-		<div class="div-spacing"></div>
-
 		<ul class="list-group">
 			<li class="list-group-item list-group-item-info">
 				<h6>TITLE</h6>
@@ -576,7 +585,7 @@ if ($action == 'view_request') {
 
 		<button class="btn btn-primary">Edit Request</button>
 
-		<button class="btn btn-danger" onclick="if (confirm('Are you sure you want to delete this feature request? This action cannot be undone.')) window.location.href = '?action=delete_request&request_id=<?= $req_id ?>';">Delete Request</button>
+		<button class="btn btn-danger" onclick="if (confirm('Are you sure you want to delete this feature request? This action cannot be undone.')) window.location.href = '?action=delete_request&request_id=<?= $req_id ?><?= ($_GET['back'] != null) ? '&back='.$_GET['back'] : '' ?>';">Delete Request</button>
 	</div><!-- .container .form -->
 	<?php
 }
@@ -597,12 +606,6 @@ if ($action == 'view_client') {
 	$result = mysqli_fetch_assoc($result);
 	?>
 	<div class="container form">
-		<div class="page-header">
-			<h1>Client <small>ID#<?= $client_id ?></small></h1>
-		</div><!-- .page-header -->
-
-		<div class="div-spacing"></div>
-
 		<ul class="list-group">
 			<li class="list-group-item list-group-item-info">
 				<h6>FULL NAME</h6>
@@ -673,7 +676,7 @@ if ($action == 'view_client') {
 
 		<button class="btn btn-primary">Edit Client</button>
 
-		<button class="btn btn-danger" onclick="if (confirm('All related requested features will also be deleted. Are you sure you want to delete this client?')) window.location.href = '?action=delete_client&client_id=<?= $client_id ?>';">Delete Client</button>
+		<button class="btn btn-danger" onclick="if (confirm('All related requested features will also be deleted. Are you sure you want to delete this client?')) window.location.href = '?action=delete_client&client_id=<?= $client_id ?><?= ($_GET['back'] != null) ? '&back='.$_GET['back'] : '' ?>';">Delete Client</button>
 	</div><!-- .container .form -->
 	<?php
 }
@@ -709,6 +712,16 @@ if ($action == 'delete_request') {
 	mysqli_query($conn, $sql);
 
 	redirect('?sub_action=delete_request_successful&request_id='.$req_id);
+
+	if ($_GET['back'] != null) {
+		// redirect to main page with a message
+		$back_url = urldecode($_GET['back']);
+
+		redirect($back_url . ((strpos($back_url, '?') == -1) ? '?' : '&') .'sub_action=delete_request_successful&request_id='.$req_id);
+	} else {
+		// redirect to main page with a message
+		redirect('?sub_action=delete_request_successful&request_id='.$req_id);
+	}
 }
 ?>
 
@@ -724,7 +737,120 @@ if ($action == 'delete_client') {
 			WHERE id = '".$client_id."'";
 	mysqli_query($conn, $sql);
 
-	redirect('?sub_action=delete_client_successful&client_id='.$client_id);
+	if ($_GET['back'] != null) {
+		// redirect to main page with a message
+		$back_url = urldecode($_GET['back']);
+
+		redirect($back_url . ((strpos($back_url, '?') == -1) ? '?' : '&') .'sub_action=delete_client_successful&client_id='.$client_id);
+	} else {
+		// redirect to main page with a message
+		redirect('?sub_action=delete_client_successful&client_id='.$client_id);
+	}
+}
+?>
+
+<?php
+/**************************************************
+ *** SHOW CLIENTS TABLE
+ **************************************************/
+if ($action == 'show_all_clients') {
+	?>
+	<!-------- CLIENTS TABLE -------->
+	<div class="container">
+		<?php
+		if ($sub_action == 'submit_request_successful') {
+			// show a message after submitted a new request successfully
+			?>
+			<div class="alert alert-success" role="alert"><strong>Feature was successfully submitted!</strong></div>
+			<?php
+		} else if ($sub_action == 'submit_client_successful') {
+			// show a message after added a new client successfully
+			?>
+			<div class="alert alert-success" role="alert"><strong>New client added successfully!</strong></div>
+			<?php
+		} else if ($sub_action == 'delete_request_successful') {
+			// show a message after deleted a request successfully
+			?>
+			<div class="alert alert-success" role="alert"><strong>Deleted request ID#<?= $_GET['request_id'] ?> successfully!</strong></div>
+			<?php
+		} else if ($sub_action == 'delete_client_successful') {
+			// show a message after deleted a client successfully
+			?>
+			<div class="alert alert-success" role="alert"><strong>Deleted client ID#<?= $_GET['client_id'] ?> successfully!</strong></div>
+			<?php
+		}
+		?>
+
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<p>
+					Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+				</p>
+
+				<div class="row">
+					<!-- Submit New Request Button -->
+					<button type="button" class="btn btn-primary pull-left" onclick="window.location.href = '?action=client_form&back=<?= back_url() ?>';" style="margin-left: 15px;"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> &nbsp;ADD CLIENT</button>
+				</div><!-- .row -->
+			</div><!-- .panel-body -->
+
+			<!-- Table -->
+			<table id="feature_table" class="table">
+				<thead>
+					<tr>
+						<th><a href="#">ID</a></th>
+						<th><a href="#">Full Name</a></th>
+						<th><a href="#">Company</a></th>
+						<th><a href="#">Contact</a></th>
+						<th><a href="#">Option</a></th>
+					</tr>
+				</thead>
+
+				<tbody>
+				<?php
+				$sql = "SELECT id, CONCAT(first_name, ' ', last_name) AS name, company, email, phone, contact_method
+						FROM feature_request_app.client
+						WHERE user_id = '".mysqli_real_escape_string($conn, $user_id)."'";
+
+				$result = mysqli_query($conn, $sql);
+				$num_rows = mysqli_num_rows($result);
+
+				if ($num_rows == 0) {
+					?>
+					<tr>
+						<td colspan="5" style="text-align: center;"><i>No available clients</i></td>
+					</tr>
+					<?php
+				} else {
+					$result = mysqli_query($conn, $sql);
+
+					while ($row = mysqli_fetch_assoc($result)) {
+						?>
+						<tr>
+							<td><?= $row['id'] ?></td>
+							<td><a href="?action=view_client&client_id=<?= $row['id'] ?>&back=<?= back_url() ?>"><?= $row['name'] ?></a></td>
+							<td><?= $row['company'] ?></a></td>
+							<?php
+							if ($row['contact_method'] == 'Email') {
+								?>
+								<td><a href="mailto:<?= $row['email'] ?>"><?= $row['email'] ?></a></td>
+								<?php
+							} else if ($row['contact_method'] == 'Phone') {
+								?>
+								<td><a href="tel:<?= $row['phone'] ?>"><?= $row['phone'] ?></a></td>
+							<?php
+							}
+							?>
+							<td><a href="#">View Requests</a></td>
+						</tr>
+						<?php
+					}
+				}
+				?>
+				</tbody>
+			</table>
+		</div>
+	</div>
+	<?php
 }
 ?>
 
@@ -736,12 +862,6 @@ if ($action == null) {
 	?>
 	<!-------- REQUESTED FEATURES TABLE -------->
 	<div class="container">
-		<div class="page-header">
-			<h1>Requested Features</h1>
-		</div>
-
-		<div class="div-spacing"></div>
-
 		<?php
 		if ($sub_action == 'submit_request_successful') {
 			// show a message after submitted a new request successfully
@@ -751,7 +871,7 @@ if ($action == null) {
 		} else if ($sub_action == 'submit_client_successful') {
 			// show a message after added a new client successfully
 			?>
-			<div class="alert alert-success" role="alert"><strong>Client was successfully added!</strong></div>
+			<div class="alert alert-success" role="alert"><strong>New client added successfully!</strong></div>
 			<?php
 		} else if ($sub_action == 'delete_request_successful') {
 			// show a message after deleted a request successfully
@@ -793,21 +913,22 @@ if ($action == null) {
 					</div><!-- .col-xs-5 .col-sm-3 .col-md-2 -->
 
 					<!-- Submit New Request Button -->
-					<button type="button" class="btn btn-primary pull-right" onclick="window.location.href = '?action=request_form';" style="margin-right: 15px;"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Submit New Request</button>
+					<button type="button" class="btn btn-primary pull-right" onclick="window.location.href = '?action=request_form';" style="margin-right: 15px;"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> &nbsp;SUBMIT REQUEST</button>
 				</div><!-- .row -->
 			</div><!-- .panel-body -->
 
 			<!-- Table -->
 			<table id="feature_table" class="table">
 				<thead>
-				<tr>
-					<th><a href="#">ID</a></th>
-					<th><a href="#">Title</a></th>
-					<th><a href="#">Client</a></th>
-					<th><a href="#">Target Date</a></th>
-					<th><a href="#">Priority</a></th>
-				</tr>
+					<tr>
+						<th><a href="#">ID</a></th>
+						<th><a href="#">Title</a></th>
+						<th><a href="#">Client</a></th>
+						<th><a href="#">Target Date</a></th>
+						<th><a href="#">Priority</a></th>
+					</tr>
 				</thead>
+
 				<tbody>
 					<?php
 					$sql = "SELECT rf.*, CONCAT(c.first_name, ' ', c.last_name) AS name
@@ -817,17 +938,28 @@ if ($action == null) {
 							WHERE rf.user_id = '".$user_id."'";
 
 					$result = mysqli_query($conn, $sql);
+					$num_rows = mysqli_num_rows($result);
 
-					while ($row = mysqli_fetch_assoc($result)) {
+					if ($num_rows == 0) {
 						?>
 						<tr>
-							<td><?= $row['id'] ?></td>
-							<td><a href="?action=view_request&request_id=<?= $row['id'] ?>"><?= $row['title'] ?></a></td>
-							<td><a href="?action=view_client&client_id=<?= $row['client_id'] ?>"><?= $row['name'] ?></a></td>
-							<td><?= date_format(date_create($row['target_date']), 'F d, Y') ?></td>
-							<td><span class="badge"><?= $row['priority'] ?></span></td>
+							<td colspan="5" style="text-align: center;"><i>No available requests</i></td>
 						</tr>
 						<?php
+					} else {
+						$result = mysqli_query($conn, $sql);
+
+						while ($row = mysqli_fetch_assoc($result)) {
+							?>
+							<tr>
+								<td><?= $row['id'] ?></td>
+								<td><a href="?action=view_request&request_id=<?= $row['id'] ?>&back=<?= back_url() ?>"><?= $row['title'] ?></a></td>
+								<td><a href="?action=view_client&client_id=<?= $row['client_id'] ?>&back=<?= back_url() ?>"><?= $row['name'] ?></a></td>
+								<td><?= date_format(date_create($row['target_date']), 'F d, Y') ?></td>
+								<td><span class="badge"><?= $row['priority'] ?></span></td>
+							</tr>
+							<?php
+						}
 					}
 					?>
 				</tbody>

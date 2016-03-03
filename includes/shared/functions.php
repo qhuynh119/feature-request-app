@@ -20,7 +20,7 @@ function is_logged_in() {
 
 function back_url() {
     // return the url of previous page
-    return htmlentities($_SERVER['PHP_SELF']);
+    return urlencode('http'.(isset($_SERVER['HTTPS']) ? 's' : '') . '://' . "{$_SERVER['HTTP_HOST']}/{$_SERVER['REQUEST_URI']}");
 }
 
 function redirect($url) {
