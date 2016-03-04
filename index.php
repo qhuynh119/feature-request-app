@@ -123,6 +123,7 @@ include_once('includes/shared/header.php');
  *** BODY
  **************************************************/
 ?>
+
 <!-------- NAVBAR -------->
 <nav class="navbar navbar-default navbar-static-top">
 	<div class="container-fluid">
@@ -840,7 +841,7 @@ if ($action == 'show_all_clients') {
 							<?php
 							}
 							?>
-							<td><a href="#">View Requests</a></td>
+							<td><a href="?client_selection_id=<?= $row['id'] ?>">View Requests</a></td>
 						</tr>
 						<?php
 					}

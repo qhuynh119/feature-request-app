@@ -9,6 +9,13 @@
     <script src="js/bootstrap.min.js" type="text/javascript"></script>
 
     <script>
+        function select_client_option(data) {
+            // select a specific client in the client drop-down box on Requests page
+            var element = "#client_filter option[value=" + data + "]";
+            $(element).attr('selected', 'selected');
+            set_table_data();
+        }
+
         function set_client_priority() {
             // populate feature priority based on the client in feature request form
             $.ajax({
@@ -32,10 +39,6 @@
                 }
             });
         }
-
-        $(document).ready(function() {
-
-        });
     </script>
 </body>
 </html>

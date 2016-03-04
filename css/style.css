@@ -46,7 +46,7 @@ body a:hover {
     color: #ffffff;
 }
 
-.navbar .container-fluid ul li a:focus {
+.navbar .container-fluid ul li a:focus, .navbar-brand:focus {
     color: #ffffff;
 }
 
