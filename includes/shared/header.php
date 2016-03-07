@@ -27,22 +27,11 @@
     }
     ?>
 
+    <!-- Font -->
     <link href='https://fonts.googleapis.com/css?family=Lato:400,300,700,900' rel='stylesheet' type='text/css'>
-</head>
 
-<?php
-// if the query string contains 'client_selection_id',
-// it means the user clicked 'View Requests' on Clients page
-// so we will need to select that client in the drop-down box
-// and repopulate the data of features table to show only the requests of that client
-if (isset($_GET['client_selection_id'])) {
-    $client_id = $_GET['client_selection_id'];
-    ?>
-    <body onload="select_client_option('<?= $_GET['client_selection_id'] ?>');">
-    <?php
-} else {
-    ?>
-    <body>
-    <?php
-}
-?>
+    <!-- We put jQuery here instead of the end of page because there is a lot of times that we need to use jQuery parallel with PHP -->
+    <!-- jQuery 1.12.1 -->
+    <script src="https://code.jquery.com/jquery-1.12.1.min.js" type="text/javascript"></script>
+</head>
+<body>

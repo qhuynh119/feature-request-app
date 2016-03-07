@@ -3,24 +3,23 @@
  *** FOOTER
  **************************************************/
 ?>
-    <!-- jQuery 1.12.1 -->
-    <script src="https://code.jquery.com/jquery-1.12.1.min.js" type="text/javascript"></script>
     <!-- Bootstrap JS -->
     <script src="js/bootstrap.min.js" type="text/javascript"></script>
 
     <script>
-        function select_client_option(data) {
-            // select a specific client in the client drop-down box on Requests page
-            var element = "#client_filter option[value=" + data + "]";
-            $(element).attr('selected', 'selected');
-            set_table_data();
-        }
+        function set_client_priority(edit_request, req_id) {
+            var data;
 
-        function set_client_priority() {
+            if (edit_request) {
+                data = 'action=get_client_priority&sub_action=edit_request&req_id=' + req_id +  '&client_id=' + $('#feature_client').val();
+            } else {
+                data = 'action=get_client_priority&client_id=' + $('#feature_client').val();
+            }
+
             // populate feature priority based on the client in feature request form
             $.ajax({
                 url: '<?= $_SERVER['PHP_SELF'] ?>',
-                data: 'action=get_client_priority&client_id=' + $('#feature_client').val(),
+                data: data,
                 success: function(data) {
                     $('#feature_priority').html(data);
                 }
