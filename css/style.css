@@ -68,6 +68,14 @@ body a:hover {
     text-align: center;
 }
 
+#profile-dropdown a {
+    color: #000;
+}
+
+.container {
+    z-index: 1;
+}
+
 .form {
     margin-bottom: 100px;
 }
@@ -92,12 +100,20 @@ body a:hover {
     .navbar-title {
         padding-top: 95px;
     }
+
+    #profile-dropdown {
+        display: none;
+    }
 }
 
 /* 768px and up */
 @media (min-width: 768px) {
     .form {
         padding: 0 8%;
+    }
+
+    #hidden-profile, #hidden-logout {
+        display: none;
     }
 }
 
@@ -122,6 +138,10 @@ body a:hover {
 @media (min-width: 992px) {
     .form {
         padding: 0 15%;
+    }
+
+    .container {
+        max-width: 1200px;
     }
 }
 

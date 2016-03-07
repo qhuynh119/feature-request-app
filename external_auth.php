@@ -48,9 +48,9 @@ if ($action == 'sign_up') {
 
             <div class="form-group">
                 <label for="sign_up_first_name" class="sr-only">First Name</label>
-                <input type="text" name="sign_up_first_name" class="form-control" placeholder="First Name" value="<?= $_SESSION['first'] ?>" required autofocus>
+                <input type="text" name="sign_up_first_name" class="form-control" placeholder="First Name" maxlength="10" value="<?= $_SESSION['first'] ?>" required autofocus>
                 <label for="sign_up_last_name" class="sr-only">Password</label>
-                <input type="text" name="sign_up_last_name" class="form-control" placeholder="Last Name" value="<?= $_SESSION['last'] ?>" required>
+                <input type="text" name="sign_up_last_name" class="form-control" placeholder="Last Name" maxlength="10" value="<?= $_SESSION['last'] ?>" required>
             </div><!-- .form-group -->
 
             <div class="form-group">
@@ -141,7 +141,7 @@ if ($action == 'sign_up_submit') {
         setcookie('user_id', mysqli_insert_id($conn), time() + (86400 * 365), '/');
 
         // redirect to main page
-        redirect("index.php?action=add_client&sub_action=first_request");
+        redirect("index.php?action=client_form&sub_action=first_request");
     }
 }
 ?>
@@ -159,8 +159,7 @@ if ($action == 'sign_in_submit') {
         // we check the email first
         $sql = "SELECT *, COUNT(id) AS count
                 FROM feature_request_app.app_user
-                WHERE email = '".$email."'
-                LIMIT 1";
+                WHERE email = '".$email."'";
         $result = mysqli_query($conn, $sql);
         $result = mysqli_fetch_assoc($result);
 
@@ -169,11 +168,8 @@ if ($action == 'sign_in_submit') {
         // if there's an account registered with the input email,
         // continue checking the password
         if ($result['count'] != 0) {
-            // hash the password to compare with the hash in database
-            $hash = password_hash($password, PASSWORD_BCRYPT);
-
-            // if they are equal to each other, set up cookies or sessions
-            if (password_verify($password, $hash)) {
+            // verify the input password and the hashed password in database
+            if (password_verify($password, $result['password'])) {
                 /* Valid */
                 $can_sign_in = true;
 
@@ -214,7 +210,7 @@ if ($action == null) {
             if ($sub_action == 'sign_in_error') {
                 ?>
                 <div class="alert alert-danger">
-                    The email or password you’ve entered is not correct.
+                    The email or password you've entered is not correct.
                     <strong><a style="color: #A94442;" href="?action=sign_up">Sign up for an account</a>.</strong>
                 </div><!-- .alert .alert-danger -->
                 <?php

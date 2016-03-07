@@ -8,6 +8,7 @@
 
     <script>
         function set_client_priority(edit_request, req_id) {
+            // populate feature priority based on the client in feature request form
             var data;
 
             if (edit_request) {
@@ -16,7 +17,6 @@
                 data = 'action=get_client_priority&client_id=' + $('#feature_client').val();
             }
 
-            // populate feature priority based on the client in feature request form
             $.ajax({
                 url: '<?= $_SERVER['PHP_SELF'] ?>',
                 data: data,

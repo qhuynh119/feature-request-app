@@ -22,6 +22,13 @@ if ($_SESSION['logged_in']) {
 	redirect('external_auth.php');
 }
 
+// get the user firstname
+$sql = "SELECT first_name
+		FROM feature_request_app.app_user
+		WHERE id = '".$user_id."'";
+$user_info = mysqli_query($conn, $sql);
+$user_info = mysqli_fetch_assoc($user_info);
+
 // get the action and sub_action value
 $action = $_GET['action'];
 $sub_action = $_GET['sub_action'];
@@ -39,7 +46,7 @@ if ($action == 'log_out') {
 }
 
 // we check if the user has any client
-if ($action != 'submit_new_client') {
+if ($action != 'submit_client') {
 	$sql = "SELECT COUNT(id) AS count
 			FROM feature_request_app.client
 			WHERE user_id = '".$user_id."'";
@@ -155,26 +162,35 @@ include_once('includes/shared/header.php');
 			</button>
 
 			<!-- App Title -->
-			<a class="navbar-brand" href="<?= $_SERVER['PHP_SELF'] ?>">FEATURE REQUEST APP<br/><small style="font-weight: lighter; font-size: 12px;">by Quan K. Huynh</small></a>
+			<a class="navbar-brand" href="<?= $_SERVER['PHP_SELF'] ?>">FEATURE REQUEST APP</a>
 		</div><!-- .navbar-header -->
 
 		<div id="navbar-collapse" class="navbar-collapse collapse">
-			<!-- Sign In Link -->
+			<!-- Links -->
 			<ul class="nav navbar-nav navbar-right">
 				<li><a href="<?= $_SERVER['PHP_SELF'] ?>">REQUESTS</a></li>
 				<li><a href="?action=show_all_clients">CLIENTS</a></li>
-				<li><a href="?action=log_out">LOG OUT</a></li>
+				<li id="hidden-profile"><a href="?action=view_profile">PROFILE</a></li>
+				<li id="hidden-logout"><a href="?action=log_out">LOG OUT</a></li>
+				<li class="dropdown" id="profile-dropdown">
+					<button href="#" class="dropdown-toggle btn btn-default" style="margin-left: 15px; margin-top: 7px;" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><span class="glyphicon glyphicon-user"></span>&nbsp;&nbsp;&nbsp;<?= strtoupper($user_info['first_name']) ?>&nbsp;&nbsp;&nbsp;<span class="caret"></span></button>
+					<ul class="dropdown-menu">
+						<li><a href="?action=view_profile">PROFILE</a></li>
+						<li role="separator" class="divider"></li>
+						<li><a href="?action=log_out">LOG OUT</a></li>
+					</ul>
+				</li>
 			</ul>
 		</div><!-- #navbar .navbar-collapse -->
 
-		<div class="navbar-title">
+		<div class="navbar-title"  style="z-index: 0;">
 			<?php
 			$title = '';
 
 			switch ($action) {
 				case 'request_form':
 					if ($sub_action == 'edit_request') {
-						$title = "EDIT REQUEST <small>#</small>".$_GET['request_id'];
+						$title = "EDIT REQUEST <small>#</small>".$_GET['req_id'];
 					} else {
 						$title = 'SUBMIT REQUEST';
 					}
@@ -187,13 +203,16 @@ include_once('includes/shared/header.php');
 					}
 					break;
 				case 'view_request':
-					$title = "REQUEST <small>#</small>".$_GET['request_id'];
+					$title = "REQUEST <small>#</small>".$_GET['req_id'];
 					break;
 				case 'view_client':
 					$title = "CLIENT <small>#</small>".$_GET['client_id'];
 					break;
 				case 'show_all_clients':
 					$title = 'CLIENTS';
+					break;
+				case 'view_profile':
+					$title = 'PROFILE';
 					break;
 				default:
 					$title = 'REQUESTS';
@@ -239,7 +258,7 @@ if ($action == 'client_form') {
 			$company    = $result['company'];
 			$email      = $result['email'];
 			$phone      = $result['phone'];
-			$occupation = $result['occupation'];
+			$job_title  = $result['job_title'];
 			$address_1  = $result['address_1'];
 			$address_2  = $result['address_2'];
 			$city       = $result['city'];
@@ -305,8 +324,8 @@ if ($action == 'client_form') {
 
 				<!-- STATE -->
 				<div class="form-group col-xs-2 col-sm-2 col-md-2">
-					<label for="client_occupation">State</label>
-					<input type="text" maxlength="2" class="form-control" name="client_state" placeholder="State" value="<?= $state ?>">
+					<label for="client_state">State</label>
+					<input type="text" maxlength="2" class="form-control" name="client_state" placeholder="ST" value="<?= $state ?>">
 				</div><!-- .form-group -->
 
 				<!-- POSTAL CODE -->
@@ -325,10 +344,10 @@ if ($action == 'client_form') {
 					<input type="text" class="form-control" name="client_company" placeholder="Company" value="<?= $company ?>" required>
 				</div><!-- .form-group -->
 
-				<!-- OCCUPATION -->
+				<!-- JOB TITLE -->
 				<div class="form-group col-xs-12 col-sm-6 col-md-6">
-					<label for="client_occupation">Occupation <span class="red-text">*</span></label>
-					<input type="text" class="form-control" name="client_occupation" placeholder="Occupation" value="<?= $occupation ?>" required>
+					<label for="client_job_title">Job Title <span class="red-text">*</span></label>
+					<input type="text" class="form-control" name="client_job_title" placeholder="Job Title" value="<?= $job_title ?>" required>
 				</div><!-- .form-group -->
 			</div><!-- .row -->
 
@@ -338,7 +357,7 @@ if ($action == 'client_form') {
 			<div class="row">
 				<div class="form-group col-xs-6 col-sm-6 col-md-6">
 					<label for="client_contact_method">Preferred Method of Contact <span class="red-text">*</span></label>
-					<select id="feature_client" class="form-control" name="client_contact_method" required onchange="set_client_priority();">
+					<select id="feature_client" class="form-control" name="client_contact_method" required>
 						<option></option>
 						<option value="Email" <?= ($contact == 'Email') ? 'selected' : '' ?>>Email</option>
 						<option value="Phone" <?= ($contact == 'Phone') ? 'selected' : '' ?>>Phone</option>
@@ -353,7 +372,7 @@ if ($action == 'client_form') {
 			<!-- ADDITIONAL NOTES -->
 			<div class="form-group">
 				<label for="client_notes">Additional Notes</label>
-				<textarea class="form-control" name="client_notes" rows="3"><?= $notes ?></textarea>
+				<textarea class="form-control" name="client_notes" rows="3"><?= htmlentities($notes) ?></textarea>
 			</div><!-- .form-group -->
 
 			<br/>
@@ -382,7 +401,7 @@ if ($action == 'submit_client') {
 		$state      = mysqli_real_escape_string($conn, $_POST['client_state']);
 		$p_code     = mysqli_real_escape_string($conn, $_POST['client_postal_code']);
 		$company    = mysqli_real_escape_string($conn, $_POST['client_company']);
-		$occupation = mysqli_real_escape_string($conn, $_POST['client_occupation']);
+		$job_title  = mysqli_real_escape_string($conn, $_POST['client_job_title']);
 		$c_method   = mysqli_real_escape_string($conn, $_POST['client_contact_method']);
 		$notes      = mysqli_real_escape_string($conn, $_POST['client_notes']);
 
@@ -395,7 +414,7 @@ if ($action == 'submit_client') {
 					SET first_name = '".$first_name."', last_name = '".$last_name."', email = '".$email."',
 						phone = '".$phone."', address_1 = '".$address_1."', address_2 = '".$address_2."',
 						city = '".$city."', state = '".$state."', postal_code = '".$p_code."',
-						company = '".$company."', occupation = '".$occupation."', contact_method = '".$c_method."',
+						company = '".$company."', job_title = '".$job_title."', contact_method = '".$c_method."',
 						notes = '".$notes."', user_id = '".$user_id."', modified = '".$modified."'
 					WHERE id = '".$client_id."'";
 			mysqli_query($conn, $sql);
@@ -407,7 +426,7 @@ if ($action == 'submit_client') {
 					SET first_name = '".$first_name."', last_name = '".$last_name."', email = '".$email."',
 						phone = '".$phone."', address_1 = '".$address_1."', address_2 = '".$address_2."',
 						city = '".$city."', state = '".$state."', postal_code = '".$p_code."',
-						company = '".$company."', occupation = '".$occupation."', contact_method = '".$c_method."',
+						company = '".$company."', job_title = '".$job_title."', contact_method = '".$c_method."',
 						notes = '".$notes."', user_id = '".$user_id."'";
 			$result = mysqli_query($conn, $sql);
 
@@ -437,7 +456,7 @@ if ($action == 'request_form') {
 
 	if ($sub_action == 'edit_request') {
 		$edit_request = true;
-		$req_id = $_GET['request_id'];
+		$req_id = $_GET['req_id'];
 
 		$sql = "SELECT *
 				FROM feature_request_app.requested_feature
@@ -460,13 +479,13 @@ if ($action == 'request_form') {
 		<?php
 		if ($sub_action == 'submit_client_successful') {
 			?>
-			<div class="alert alert-success" role="alert"><strong>New client added successfully!</strong></div>
+			<div class="alert alert-success" role="alert"><strong>New client has been added</strong></div>
 			<?php
 		}
 		?>
 
 		<!-- SUBMIT NEW FEATURE FORM -->
-		<form method="post" action="?action=submit_new_request<?= ($edit_request) ? '&sub_action=edit_request&req_id='.$req_id : '' ?>">
+		<form method="post" action="?action=submit_request<?= ($edit_request) ? '&sub_action=edit_request&req_id='.$req_id : '' ?>">
 			<!-- FEATURE TITLE -->
 			<div class="form-group">
 				<label for="feature_title">Title <span class="red-text">*</span></label>
@@ -495,12 +514,12 @@ if ($action == 'request_form') {
 				</div>
 
 				<!-- ADD NEW CLIENT -->
-				<div class="form-group col-xs-2 col-sm-2 col-md-2">
-					<label for="add_client" style="visibility: hidden">A</label>
-					<button class="btn btn-default form-control" id="add_client" onclick="window.location.href = '?action=client_form&back=<?= back_url() ?>';">
-						<span class="glyphicon glyphicon-plus"></span>
-					</button>
-				</div>
+<!--				<div class="col-xs-2 col-sm-2 col-md-2">-->
+<!--					<label for="add_client" style="visibility: hidden">A</label>-->
+<!--					<button class="btn btn-default form-control" id="add_client" onclick="window.location.href = '?action=client_form&back=</?= //back_url() ?/>';">-->
+<!--						<span class="glyphicon glyphicon-plus"></span>-->
+<!--					</button>-->
+<!--				</div>-->
 			</div>
 
 			<div class="clear"></div>
@@ -563,13 +582,13 @@ if ($action == 'request_form') {
 			<!-- TICKET URL -->
 			<div class="form-group">
 				<label for="feature_url">Ticket URL</label>
-				<input type="url" class="form-control" name="feature_url" placeholder="Ticket URL" <?= $url ?>>
+				<input type="url" class="form-control" name="feature_url" placeholder="Ticket URL" value="<?= $url ?>">
 			</div><!-- .form-group -->
 
 			<!-- FEATURE DESCRIPTION -->
 			<div class="form-group">
 				<label for="feature_description">Description <span class="red-text">*</span></label>
-				<textarea class="form-control" name="feature_description" rows="3" required><?= $desc ?></textarea>
+				<textarea class="form-control" name="feature_description" rows="3" required><?= htmlentities($desc) ?></textarea>
 			</div><!-- .form-group -->
 
 			<br/>
@@ -586,7 +605,7 @@ if ($action == 'request_form') {
 /**************************************************
  *** SUBMIT NEW REQUEST or UPDATE REQUEST
  **************************************************/
-if ($action == 'submit_new_request') {
+if ($action == 'submit_request') {
 	// insert new feature record into the database
 	if (isset($_POST)) {
 		$title     = mysqli_real_escape_string($conn, $_POST['feature_title']);
@@ -613,7 +632,9 @@ if ($action == 'submit_new_request') {
 			// and the request having the priority that we want to assign to the request being edited
 			$sql = "UPDATE feature_request_app.requested_feature
 					SET priority = '".$result['priority']."'
-					WHERE priority = '".$priority."'";
+					WHERE priority = '".$priority."'
+					AND client_id = '".$client_id."'
+					AND user_id = '".$user_id."'";
 			mysqli_query($conn, $sql);
 
 			// the rest is self-explanatory
@@ -621,7 +642,9 @@ if ($action == 'submit_new_request') {
 					SET title = '".$title."', client_id = '".$client_id."', priority = '".$priority."',
 						prod_area_id = '".$area."', target_date = '".$date."', ticket_url = '".$url."',
 						description = '".$desc."'
-					WHERE id = '".$req_id."'";
+					WHERE id = '".$req_id."'
+					AND client_id = '".$client_id."'
+					AND user_id = '".$user_id."'";
 			mysqli_query($conn, $sql);
 
 			redirect('?action=view_request&sub_action=edit_request_successful&req_id='.$req_id);
@@ -676,7 +699,7 @@ if ($action == 'view_request') {
 		<?php
 		if ($sub_action == 'edit_request_successful') {
 			?>
-			<div class="alert alert-success"><strong>Updated request #<?= $_GET['req_id'] ?> successfully!</strong></div>
+			<div class="alert alert-success"><strong>Request #<?= $_GET['req_id'] ?> has been updated</strong></div>
 			<?php
 		}
 		?>
@@ -726,9 +749,9 @@ if ($action == 'view_request') {
 			</tbody>
 		</table>
 
-		<button class="btn btn-primary" onclick="window.location.href = '?action=request_form&sub_action=edit_request&request_id=<?= $req_id ?>'">Edit Request</button>
+		<button class="btn btn-primary" onclick="window.location.href = '?action=request_form&sub_action=edit_request&req_id=<?= $req_id ?>'">Edit Request</button>
 
-		<button class="btn btn-danger" onclick="if (confirm('Are you sure you want to delete this feature request? This action cannot be undone.')) window.location.href = '?action=delete_request&request_id=<?= $req_id ?>';">Delete Request</button>
+		<button class="btn btn-danger" onclick="if (confirm('Are you sure you want to delete this feature request? This action cannot be undone.')) window.location.href = '?action=delete_request&req_id=<?= $req_id ?>';">Delete Request</button>
 	</div><!-- .container .form -->
 	<?php
 }
@@ -752,7 +775,7 @@ if ($action == 'view_client') {
 		<?php
 			if ($sub_action == 'edit_client_successful') {
 			?>
-			<div class="alert alert-success"><strong>Updated client #<?= $_GET['client_id'] ?> successfully!</strong></div>
+			<div class="alert alert-success"><strong>Client #<?= $_GET['client_id'] ?> has been updated</strong></div>
 			<?php
 		}
 		?>
@@ -776,8 +799,12 @@ if ($action == 'view_client') {
 					<td><a href="tel:<?= $result['phone'] ?>"><?= $result['phone'] ?></td>
 				</tr>
 				<tr>
-					<td><strong>Occupation</strong></td>
-					<td><?= $result['occupation'] ?></td>
+					<td><strong>Company</strong></td>
+					<td><?= $result['company'] ?></td>
+				</tr>
+				<tr>
+					<td><strong>Job Title</strong></td>
+					<td><?= $result['job_title'] ?></td>
 				</tr>
 				<tr <?= ($result['address'] == '<br/>') ? 'hidden' : '' ?>>
 					<td><strong>Address</strong></td>
@@ -838,7 +865,7 @@ if ($action == 'view_client') {
  *** DELETE REQUEST
  **************************************************/
 if ($action == 'delete_request') {
-	$req_id = $_GET['request_id'];
+	$req_id = $_GET['req_id'];
 
 	$sql = "SELECT client_id, priority
 			FROM feature_request_app.requested_feature
@@ -863,7 +890,7 @@ if ($action == 'delete_request') {
 	mysqli_query($conn, $sql);
 
 	// redirect to main page with a message
-	redirect('?sub_action=delete_request_successful&request_id='.$req_id);
+	redirect('?sub_action=delete_request_successful&req_id='.$req_id);
 }
 ?>
 
@@ -894,34 +921,24 @@ if ($action == 'show_all_clients') {
 	<!-------- CLIENTS TABLE -------->
 	<div class="container">
 		<?php
-		if ($sub_action == 'submit_request_successful') {
-			// show a message after submitted a new request successfully
-			?>
-			<div class="alert alert-success" role="alert"><strong>Feature was successfully submitted!</strong></div>
-			<?php
-		} else if ($sub_action == 'submit_client_successful') {
+		if ($sub_action == 'submit_client_successful') {
 			// show a message after added a new client successfully
 			?>
-			<div class="alert alert-success" role="alert"><strong>New client added successfully!</strong></div>
-			<?php
-		} else if ($sub_action == 'delete_request_successful') {
-			// show a message after deleted a request successfully
-			?>
-			<div class="alert alert-success" role="alert"><strong>Deleted request ID#<?= $_GET['request_id'] ?> successfully!</strong></div>
+			<div class="alert alert-success" role="alert"><strong>New client has been added</strong></div>
 			<?php
 		} else if ($sub_action == 'delete_client_successful') {
 			// show a message after deleted a client successfully
 			?>
-			<div class="alert alert-success" role="alert"><strong>Deleted client ID#<?= $_GET['client_id'] ?> successfully!</strong></div>
+			<div class="alert alert-success" role="alert"><strong>Client #<?= $_GET['client_id'] ?> has been deleted</strong></div>
 			<?php
 		}
 		?>
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<p>
-					Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-				</p>
+<!--				<p>-->
+<!--					Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.-->
+<!--				</p>-->
 
 				<div class="row">
 					<!-- Submit New Request Button -->
@@ -1002,31 +1019,31 @@ if ($action == null) {
 		if ($sub_action == 'submit_request_successful') {
 			// show a message after submitted a new request successfully
 			?>
-			<div class="alert alert-success" role="alert"><strong>Feature was successfully submitted!</strong></div>
+			<div class="alert alert-success" role="alert"><strong>New feature request has been submitted</strong></div>
 			<?php
 		} else if ($sub_action == 'submit_client_successful') {
 			// show a message after added a new client successfully
 			?>
-			<div class="alert alert-success" role="alert"><strong>New client added successfully!</strong></div>
+			<div class="alert alert-success" role="alert"><strong>New client has been added</strong></div>
 			<?php
 		} else if ($sub_action == 'delete_request_successful') {
 			// show a message after deleted a request successfully
 			?>
-			<div class="alert alert-success" role="alert"><strong>Deleted request ID#<?= $_GET['request_id'] ?> successfully!</strong></div>
+			<div class="alert alert-success" role="alert"><strong>Request #<?= $_GET['req_id'] ?> has been deleted</strong></div>
 			<?php
 		} else if ($sub_action == 'delete_client_successful') {
 			// show a message after deleted a client successfully
 			?>
-			<div class="alert alert-success" role="alert"><strong>Deleted client ID#<?= $_GET['client_id'] ?> successfully!</strong></div>
+			<div class="alert alert-success" role="alert"><strong>Client #<?= $_GET['client_id'] ?> has been deleted</strong></div>
 			<?php
 		}
 		?>
 
 		<div class="panel panel-default">
 			<div class="panel-body">
-				<p>
-					Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-				</p>
+<!--				<p>-->
+<!--					Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.-->
+<!--				</p>-->
 
 				<div class="row">
 					<!-- Select Client -->
@@ -1117,7 +1134,196 @@ if ($action == null) {
 	</div>
 	<?php
 }
+?>
 
+<?php
+/**************************************************
+ *** VIEW PROFILE
+ **************************************************/
+if ($action == 'view_profile') {
+	?>
+	<div class="container form">
+		<?php
+		if ($sub_action == 'edit_profile_successful') {
+			?>
+			<div class="alert alert-success"><strong>Profile has been updated</strong></div>
+			<?php
+		}
+
+		$sql = "SELECT *
+			FROM feature_request_app.app_user
+			WHERE id = '".mysqli_real_escape_string($conn, $user_id)."'";
+		$result = mysqli_query($conn, $sql);
+		$result = mysqli_fetch_assoc($result);
+
+		$first_name = $result['first_name'];
+		$last_name  = $result['last_name'];
+		$company    = $result['company'];
+		$email      = $result['email'];
+		$phone      = $result['phone'];
+		$job_title  = $result['job_title'];
+		$address_1  = $result['address_1'];
+		$address_2  = $result['address_2'];
+		$city       = $result['city'];
+		$state      = $result['state'];
+		$pcode      = $result['postal_code'];
+		$notes      = $result['notes'];
+		$contact    = $result['contact_method'];
+		?>
+		<!-- ADD NEW CLIENT FORM -->
+		<form method="post" action="?action=update_profile">
+			<div class="row">
+				<!-- FIRST NAME -->
+				<div class="form-group col-xs-6 col-sm-6 col-md-6">
+					<label for="user_first_name">First Name <span class="red-text">*</span></label>
+					<input type="text" class="form-control" name="user_first_name" placeholder="First Name" value="<?= $first_name ?>" required>
+				</div><!-- .form-group -->
+
+				<!-- LAST NAME -->
+				<div class="form-group col-xs-6 col-sm-6 col-md-6">
+					<label for="user_last_name">Last Name <span class="red-text">*</span></label>
+					<input type="text" class="form-control" name="user_last_name" placeholder="Last Name" value="<?= $last_name ?>" required>
+				</div><!-- .form-group -->
+			</div><!-- .row -->
+
+			<div class="row">
+				<!-- EMAIL -->
+				<div class="form-group col-xs-12 col-sm-6 col-md-6">
+					<label for="user_email">Email <span class="red-text">*</span></label>
+					<input type="email" class="form-control" name="user_email" placeholder="Email" value="<?= $email ?>" readonly required>
+				</div><!-- .form-group -->
+
+				<!-- COMPANY -->
+				<div class="form-group col-xs-12 col-sm-6 col-md-6">
+					<label for="user_company">Company <span class="red-text">*</span></label>
+					<input type="text" class="form-control" name="user_company" placeholder="Company" value="<?= $company ?>" required>
+				</div><!-- .form-group -->
+			</div><!-- .row -->
+
+			<br/>
+
+			<h6>ADDITIONAL INFORMATION<hr  style="margin-top: 5px; margin-bottom: 20px;"/></h6>
+
+			<div class="row">
+				<!-- ADDRESS LINE 1 -->
+				<div class="form-group col-xs-12 col-sm-12 col-md-12">
+					<label for="user_address_1">Address Line 1</label>
+					<input type="text" class="form-control" name="user_address_1" placeholder="Address Line 1" value="<?= $address_1 ?>">
+				</div><!-- .form-group -->
+
+				<!-- ADDRESS LINE 2 -->
+				<div class="form-group col-xs-12 col-sm-12 col-md-12">
+					<label for="user_address_2">Address Line 2</label>
+					<input type="text" class="form-control" name="user_address_2" placeholder="Address Line 2" value="<?= $address_2 ?>">
+				</div><!-- .form-group -->
+			</div><!-- .row -->
+
+			<div class="row">
+				<!-- CITY -->
+				<div class="form-group col-xs-5 col-sm-5 col-md-5">
+					<label for="user_city">City</label>
+					<input type="text" class="form-control" name="user_city" placeholder="City" value="<?= $city ?>">
+				</div><!-- .form-group -->
+
+				<!-- STATE -->
+				<div class="form-group col-xs-2 col-sm-2 col-md-2">
+					<label for="user_state">State</label>
+					<input type="text" maxlength="2" class="form-control" name="user_state" placeholder="State" value="<?= $state ?>">
+				</div><!-- .form-group -->
+
+				<!-- POSTAL CODE -->
+				<div class="form-group col-xs-5 col-sm-5 col-md-5">
+					<label for="user_postal_code">Postal Code</label>
+					<input type="text" maxlength="5" class="form-control" name="user_postal_code" placeholder="Postal Code" value="<?= $pcode ?>">
+				</div><!-- .form-group -->
+			</div><!-- .row -->
+
+			<hr/>
+
+			<div class="row">
+				<!-- PHONE -->
+				<div class="form-group col-xs-12 col-sm-6 col-md-6">
+					<label for="user_phone">Phone</label>
+					<input type="tel" pattern="^(\([0-9]{3}\) |[0-9]{3}-)[0-9]{3}-[0-9]{4}$" maxlength="14" class="form-control" name="user_phone" placeholder="(123) 456-7890" value="<?= $phone ?>">
+				</div><!-- .form-group -->
+
+				<!-- JOB TITLE -->
+				<div class="form-group col-xs-12 col-sm-6 col-md-6">
+					<label for="user_job_title">Job Title</label>
+					<input type="text" class="form-control" name="user_job_title" placeholder="Job Title" value="<?= $job_title ?>">
+				</div><!-- .form-group -->
+			</div><!-- .row -->
+
+			<div class="clear"></div>
+
+			<!-- METHOD OF CONTACT -->
+			<div class="row">
+				<div class="form-group col-xs-6 col-sm-6 col-md-6">
+					<label for="user_contact_method">Preferred Method of Contact</label>
+					<select class="form-control" name="user_contact_method">
+						<option></option>
+						<option value="Email" <?= ($contact == 'Email') ? 'selected' : '' ?>>Email</option>
+						<option value="Phone" <?= ($contact == 'Phone') ? 'selected' : '' ?>>Phone</option>
+					</select>
+				</div><!-- .form-group -->
+			</div><!-- .row -->
+
+			<div class="clear"></div>
+
+			<hr/>
+
+			<!-- ADDITIONAL NOTES -->
+			<div class="form-group">
+				<label for="user_notes">Additional Notes</label>
+				<textarea class="form-control" name="user_notes" rows="3"><?= $notes ?></textarea>
+			</div><!-- .form-group -->
+
+			<br/>
+
+			<!-- SUBMIT -->
+			<button type="submit" class="btn-lg btn-primary">Submit Changes</button>
+		</form>
+	</div><!-- .container .form -->
+	<?php
+}
+?>
+
+<?php
+/**************************************************
+ *** UPDATE PROFILE
+ **************************************************/
+if ($action == 'update_profile') {
+	if (isset($_POST)) {
+		$first_name = mysqli_real_escape_string($conn, $_POST['user_first_name']);
+		$last_name  = mysqli_real_escape_string($conn, $_POST['user_last_name']);
+		$email      = mysqli_real_escape_string($conn, $_POST['user_email']);
+		$phone      = mysqli_real_escape_string($conn, $_POST['user_phone']);
+		$address_1  = mysqli_real_escape_string($conn, $_POST['user_address_1']);
+		$address_2  = mysqli_real_escape_string($conn, $_POST['user_address_2']);
+		$city       = mysqli_real_escape_string($conn, $_POST['user_city']);
+		$state      = mysqli_real_escape_string($conn, $_POST['user_state']);
+		$p_code     = mysqli_real_escape_string($conn, $_POST['user_postal_code']);
+		$company    = mysqli_real_escape_string($conn, $_POST['user_company']);
+		$job_title  = mysqli_real_escape_string($conn, $_POST['user_job_title']);
+		$c_method   = mysqli_real_escape_string($conn, $_POST['user_contact_method']);
+		$notes      = mysqli_real_escape_string($conn, $_POST['user_notes']);
+		$modified   = date('Y-m-d h:i:sa');
+
+		$sql = "UPDATE feature_request_app.app_user
+				SET first_name = '".$first_name."', last_name = '".$last_name."', email = '".$email."',
+					phone = '".$phone."', address_1 = '".$address_1."', address_2 = '".$address_2."',
+					city = '".$city."', state = '".$state."', postal_code = '".$p_code."',
+					company = '".$company."', job_title = '".$job_title."', contact_method = '".$c_method."',
+					notes = '".$notes."', modified = '".$modified."'
+				WHERE id = '".$user_id."'";
+		mysqli_query($conn, $sql);
+
+		redirect('?action=view_profile&sub_action=edit_profile_successful');
+	}
+}
+?>
+
+<?php
 /**************************************************
  *** FOOTER
  **************************************************/
